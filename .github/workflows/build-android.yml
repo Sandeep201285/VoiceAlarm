@@ -48,12 +48,19 @@ jobs:
       - name: Compile Production App Bundle (AAB) & APK
         run: |
           cd EchoCare
-          ./gradlew bundleRelease assembleRelease
+          ./gradlew bundleRelease assembleRelease 2>&1 | tee ../gradle_build.log
         env:
           KEYSTORE_PATH: "keystore.jks"
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload Gradle Build Logs on Failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-logs
+          path: gradle_build.log
 
       - name: Upload Signed Android App Bundle
         uses: actions/upload-artifact@v4
