@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EchoCare – Phase 3 Dual-Phone Sharing Demo</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --bg:         #0A0B18;
+    --surface:    #12142B;
+    --surfvar:    #1C1F3D;
+    --card:       #1A1D38;
+    --outline:    #3A3D5C;
+    --primary:    #8B5CF6;
+    --primary-c:  #4C1D95;
+    --on-primary: #FFFFFF;
+    --secondary:  #22D3EE;
+    --amber:      #F59E0B;
+    --error:      #EF4444;
+    --text:       #E8E9FF;
+    --text2:      #8B8FA8;
+    --radius:     18px;
+    --transition: 0.3s cubic-bezier(.4,0,.2,1);
+  }
+
+  body {
+    background: #050610;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 24px 16px 40px;
+    font-family: 'Outfit', -apple-system, sans-serif;
+    color: var(--text);
+  }
+
+  /* ── Page header ─────────────────────────────────────────────────── */
+  .page-header {
+    width: 100%;
+    max-width: 960px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .page-header h1 { font-size: 26px; color: var(--primary); font-weight: 800; }
+  .page-header p  { font-size: 14px; color: var(--text2); margin-top: 4px; }
+
+  /* ── Side-by-Side Playground Layout ──────────────────────────────── */
+  .playground {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+    width: 100%;
+    max-width: 1020px;
+    position: relative;
+  }
+
+  /* ── Phone frame ─────────────────────────────────────────────────── */
+  .phone {
+    width: 360px;
+    height: 780px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 3px solid var(--outline);
+    box-shadow: 0 20px 50px rgba(0,0,0,.6), 0 0 80px rgba(139,92,246,.08);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-label {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--secondary);
+    margin-top: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Center Cloud Column */
+  .cloud-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    width: 180px;
+    height: 780px;
+    position: relative;
+  }
+  .cloud-node {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-c));
+    border: 2px solid var(--secondary);
+    box-shadow: 0 0 24px rgba(34,211,238,.4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    z-index: 5;
+    position: relative;
+  }
+  .cloud-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--secondary);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  /* Connection Lines & Glowing Pulses */
+  .connection-line {
+    position: absolute;
+    height: 4px;
+    background: rgba(255,255,255,.05);
+    z-index: 1;
+  }
+  .line-left {
+    width: 110px;
+    left: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(90deg, transparent, var(--outline), transparent);
+  }
+  .line-right {
+    width: 110px;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(90deg, transparent, var(--outline), transparent);
+  }
+
+  .pulse-dot {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--secondary);
+    box-shadow: 0 0 12px var(--secondary);
+    top: 50%;
+    transform: translateY(-50%);
+    display: none;
+    z-index: 2;
+  }
+  @keyframes send-left {
+    0%   { left: 300px; opacity: 1; }
+    100% { left: 450px; opacity: 0.8; }
+  }
+  @keyframes send-right {
+    0%   { left: 490px; opacity: 1; }
+    100% { left: 630px; opacity: 0.8; }
+  }
+  @keyframes reply-right-back {
+    0%   { left: 630px; opacity: 1; }
+    100% { left: 490px; opacity: 0.8; }
+  }
+  @keyframes reply-left-back {
+    0%   { left: 450px; opacity: 1; }
+    100% { left: 300px; opacity: 0.8; }
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px 4px;
+    font-size: 11px; font-weight: 600; color: var(--text2);
+    flex-shrink: 0;
+  }
+
+  /* Screen container */
+  .screens { flex: 1; overflow: hidden; position: relative; }
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    overflow-y: auto; overflow-x: hidden;
+    opacity: 0; pointer-events: none;
+    transform: translateX(30px);
+    transition: opacity var(--transition), transform var(--transition);
+    scrollbar-width: none;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen.active {
+    opacity: 1; pointer-events: all; transform: translateX(0);
+  }
+  .screen.slide-back { transform: translateX(-30px); }
+
+  /* Bottom nav */
+  .bottom-nav {
+    display: flex; border-top: 1px solid var(--outline);
+    background: var(--surface); flex-shrink: 0;
+    padding-bottom: 8px;
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 10px 0 4px; gap: 4px; cursor: pointer;
+    font-size: 9px; color: var(--text2);
+    transition: color var(--transition);
+  }
+  .nav-item.active { color: var(--primary); }
+  .nav-item svg { width: 18px; height: 18px; }
+
+  /* Custom Reusable Elements */
+  .topbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 16px 6px; flex-shrink: 0;
+  }
+  .topbar-title { font-size: 18px; font-weight: 800; flex: 1; }
+  .topbar-sub   { font-size: 11px; color: var(--text2); }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--surfvar);
+    border: none; cursor: pointer; color: var(--text); display: flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+    position: relative;
+  }
+  .icon-btn:hover { background: var(--outline); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
+  .notif-badge {
+    position: absolute; top: -2px; right: -2px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--error);
+    display: none;
+  }
+
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    border: 1px solid rgba(255,255,255,.07);
+    padding: 14px; margin: 0 14px;
+  }
+  .card + .card { margin-top: 10px; }
+
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 0 16px; height: 46px; border-radius: 14px; border: none;
+    cursor: pointer; font-size: 14px; font-weight: 700;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 16px rgba(139,92,246,.3); }
+  .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+  .btn-danger  { background: rgba(239,68,68,.15); color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+
+  .input-wrap { display: flex; flex-direction: column; gap: 4px; }
+  .input-label { font-size: 10px; font-weight: 700; color: var(--text2); text-transform: uppercase; }
+  .input {
+    background: var(--surfvar); border: 1.5px solid var(--outline);
+    border-radius: 12px; padding: 10px 12px; color: var(--text);
+    font-size: 14px; outline: none; width: 100%;
+    font-family: inherit;
+  }
+  .input:focus { border-color: var(--primary); }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 700;
+    background: rgba(139,92,246,.2); color: var(--primary);
+  }
+  .chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    border: 1.5px solid var(--outline); background: transparent;
+    color: var(--text2); cursor: pointer;
+  }
+  .chip.active {
+    background: rgba(139,92,246,.2); border-color: var(--primary); color: var(--primary);
+  }
+
+  .stats-banner {
+    margin: 4px 14px 0; border-radius: 16px;
+    background: linear-gradient(135deg, var(--primary-c), #1a3a5c);
+    padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .stats-num  { font-size: 36px; font-weight: 900; color: #fff; }
+  .stats-lbl  { font-size: 11px; color: rgba(255,255,255,.75); }
+
+  .section-hdr {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 14px 4px; font-size: 14px; font-weight: 700;
+  }
+  .section-count {
+    background: rgba(139,92,246,.25); color: var(--primary);
+    border-radius: 99px; padding: 0px 6px; font-size: 10px; font-weight: 700;
+  }
+
+  /* Cards list styling */
+  .rem-card {
+    margin: 0 14px 8px;
+    background: var(--card); border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.07);
+    display: flex; overflow: hidden;
+  }
+  .rem-accent { width: 4px; background: var(--primary); flex-shrink: 0; }
+  .rem-accent.inactive { background: var(--outline); }
+  .rem-accent.remote { background: var(--secondary); }
+  .rem-body { flex: 1; padding: 12px 8px 12px 12px; }
+  .rem-title { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+  .rem-msg   { font-size: 11px; color: var(--text2); margin-bottom: 6px; line-height: 1.4; }
+  .rem-time  { font-size: 11px; color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 4px; }
+  
+  .rem-actions { display: flex; flex-direction: column; align-items: center; padding: 6px 4px 6px 0; gap: 4px; }
+  .toggle {
+    width: 32px; height: 18px; border-radius: 99px; position: relative;
+    cursor: pointer; border: none;
+  }
+  .toggle.on  { background: var(--primary); }
+  .toggle.off { background: var(--outline); }
+  .toggle::after {
+    content: ''; position: absolute; width: 12px; height: 12px;
+    border-radius: 50%; background: #fff; top: 3px; transition: left .2s;
+  }
+  .toggle.on::after  { left: 17px; }
+  .toggle.off::after { left: 3px; }
+
+  /* Double FAB Row */
+  .fab-container {
+    position: absolute; bottom: 16px; right: 16px;
+    display: flex; align-items: center; gap: 8px; z-index: 10;
+  }
+  .fab-secondary {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: var(--surfvar); border: 1px solid var(--outline);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,.3);
+  }
+  .fab-primary {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: var(--primary); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 20px rgba(139,92,246,.4);
+  }
+  .fab-primary svg { width: 22px; height: 22px; color: #fff; }
+  .fab-secondary svg { width: 18px; height: 18px; color: var(--text); }
+
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px; padding: 30px 16px; text-align: center;
+  }
+  .empty-state .emoji { font-size: 44px; }
+  .empty-state p { font-size: 13px; color: var(--text2); }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SCREEN: VOICE OVERLAY
+  ───────────────────────────────────────────────────────────────── */
+  .voice-overlay {
+    position: absolute; inset: 0; background: rgba(5,6,16,0.92);
+    z-index: 100; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 16px;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+  }
+  .voice-overlay.active { opacity: 1; pointer-events: all; }
+  .voice-headline { font-size: 20px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+  .voice-sub      { font-size: 12px; color: var(--text2); margin-bottom: 20px; }
+  
+  .visualizer-container {
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    height: 50px; margin-bottom: 20px;
+  }
+  .visualizer-bar {
+    width: 4px; height: 8px; border-radius: 99px;
+    background: var(--secondary);
+  }
+  .transcript-card {
+    background: rgba(28,31,61,0.5); border: 1.5px solid var(--outline);
+    border-radius: var(--radius); padding: 14px; width: 100%;
+    min-height: 90px; display: flex; align-items: center; justify-content: center;
+    text-align: center; margin-bottom: 20px;
+  }
+  .transcript-text { font-size: 14px; color: var(--text); }
+  .transcript-placeholder { font-size: 13px; color: var(--text2); opacity: 0.6; font-style: italic; }
+
+  .voice-sim-box {
+    background: var(--surface); border: 1px solid var(--outline);
+    border-radius: 12px; padding: 10px; width: 100%; margin-bottom: 20px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .voice-sim-title { font-size: 10px; font-weight: 700; color: var(--text2); text-transform: uppercase; text-align: center; }
+  .voice-sim-btn {
+    background: var(--surfvar); border: none; padding: 6px 10px; border-radius: 8px;
+    color: var(--text); font-size: 11px; cursor: pointer; text-align: left;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SCREEN: GROUPS UI
+  ───────────────────────────────────────────────────────────────── */
+  .group-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surfvar); padding: 12px 14px; border-radius: 14px;
+    margin: 0 14px 8px; cursor: pointer; border: 1px solid transparent;
+  }
+  .group-row:hover { border-color: var(--primary); }
+  .group-letter {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #fff; font-weight: 700; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  
+  .member-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surfvar); padding: 10px 12px; border-radius: 10px;
+    margin: 0 14px 6px;
+  }
+  .member-role {
+    font-size: 9px; font-weight: 700; background: var(--primary); color: #fff;
+    padding: 2px 6px; border-radius: 6px; margin-left: 6px;
+  }
+  .member-status {
+    font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+    cursor: pointer;
+  }
+  .member-status.pending  { background: rgba(239,68,68,.15); color: #fca5a5; }
+  .member-status.accepted { background: rgba(34,211,238,.15); color: #7eeef9; }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SCREEN: CONFIRMATION
+  ───────────────────────────────────────────────────────────────── */
+  .confirm-body { padding: 12px 14px 100px; display: flex; flex-direction: column; gap: 14px; }
+  .parsed-card {
+    background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(34,211,238,0.05));
+    border: 1.5px solid var(--primary);
+  }
+  .recipient-tag {
+    background: rgba(34,211,238,.2); color: var(--secondary);
+    padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 700;
+  }
+  .datetime-row { display: flex; gap: 8px; }
+  .datetime-chip {
+    flex: 1; padding: 10px; border-radius: 12px;
+    background: rgba(139,92,246,.15); border: 1.5px solid rgba(139,92,246,.3);
+    text-align: center; cursor: pointer; font-size: 12px; font-weight: 600;
+    color: var(--primary);
+  }
+  .form-section-label {
+    font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: .5px;
+  }
+  .recurrence-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 12px;
+    background: var(--surfvar); cursor: pointer; border: 1px solid transparent;
+  }
+  .recurrence-option.selected { border-color: var(--primary); background: rgba(139,92,246,0.15); }
+  .recurrence-option .radio {
+    width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--outline);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .recurrence-option.selected .radio { border-color: var(--primary); }
+  .recurrence-option.selected .radio::after {
+    content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--primary);
+  }
+
+  /* ─── Alarm screen ────────────────────────────────────────────────── */
+  #alarm-sandeep, #alarm-papa {
+    background: radial-gradient(ellipse at 50% 30%, rgba(139,92,246,.35) 0%, transparent 70%), var(--bg);
+    align-items: center; justify-content: center;
+  }
+  .alarm-inner {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 16px; padding: 20px 14px; width: 100%;
+  }
+  .clock-display { display: flex; align-items: flex-end; gap: 4px; }
+  .clock-time { font-size: 54px; font-weight: 900; letter-spacing: -2px; }
+  .clock-ampm { font-size: 16px; color: var(--primary); font-weight: 700; padding-bottom: 8px; }
+  .alarm-bell {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-c));
+    display: flex; align-items: center; justify-content: center; font-size: 40px;
+    animation: pulse-ring 1.4s infinite;
+  }
+  @keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(139,92,246,.6); transform: scale(1); }
+    50%  { box-shadow: 0 0 0 16px rgba(139,92,246,0); transform: scale(1.08); }
+    100% { box-shadow: 0 0 0 0 rgba(139,92,246,0); transform: scale(1); }
+  }
+  .alarm-card {
+    background: rgba(255,255,255,.05); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.1); border-radius: 16px;
+    padding: 16px; width: 100%; text-align: center;
+  }
+  .alarm-title   { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+  .alarm-message { font-size: 13px; color: var(--text2); line-height: 1.5; }
+
+  .toast {
+    position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--surfvar); border: 1px solid var(--outline);
+    border-radius: 12px; padding: 10px 16px; font-size: 12px; font-weight: 600;
+    pointer-events: none; opacity: 0; z-index: 9999;
+    white-space: nowrap; transition: transform .3s, opacity .3s;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* Interactive Console / Instructions Footer */
+  .interactive-console {
+    width: 100%;
+    max-width: 960px;
+    background: var(--surface);
+    border: 1.5px solid var(--outline);
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 24px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text2);
+    box-shadow: 0 4px 20px rgba(0,0,0,.5);
+  }
+  .console-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--secondary);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .step-list {
+    margin-left: 18px;
+  }
+  .step-item.active-step {
+    color: #fff;
+    font-weight: 600;
+  }
+  .step-item.active-step::marker {
+    color: var(--secondary);
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Page Header ───────────────────────────────────────────────── -->
+<div class="page-header">
+  <h1>📡 EchoCare — Phase 3 Cross-Device Sharing Demo</h1>
+  <p>Simulating Sandeep (Left) and Papa (Right) with real-time cloud sync & FCM push triggers</p>
+</div>
+
+<!-- ── Connection Playground Layout ─────────────────────────────── -->
+<div class="playground">
+
+  <!-- ==========================================
+       LEFT PHONE: SANDEEP (SENDER)
+  =========================================== -->
+  <div>
+    <div class="phone" id="phone-sandeep">
+      <div class="status-bar">
+        <span id="sandeep-time">9:41</span>
+        <span>Sandeep's Phone</span>
+        <span>🔋 85%</span>
+      </div>
+
+      <div class="screens" id="sandeep-screens">
+        
+        <!-- SANDEEP HOME -->
+        <div class="screen active" id="sandeep-home">
+          <div class="topbar">
+            <div style="flex:1">
+              <div class="topbar-title">Hello, Sandeep! 👋</div>
+              <div class="topbar-sub" id="sandeep-date">Sun, 14 June</div>
+            </div>
+            <button class="icon-btn" onclick="goToSandeep('sandeep-groups')" title="Family Groups">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="stats-banner">
+            <div>
+              <div class="stats-num" id="sandeep-stats-count">0</div>
+              <div class="stats-lbl">Active Reminders</div>
+            </div>
+            <div class="stats-icon">🔔</div>
+          </div>
+
+          <div class="section-hdr">⏰ Shared & Personal</div>
+          <div id="sandeep-reminders-list" style="flex:1; overflow-y:auto">
+            <div class="empty-state">
+              <div class="emoji">💤</div>
+              <p>No active reminders.<br>Tap Mic to speak a reminder!</p>
+            </div>
+          </div>
+
+          <!-- FAB Container -->
+          <div class="fab-container">
+            <button class="fab-secondary" onclick="goToSandeep('sandeep-add')" title="Manual Add">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+              </svg>
+            </button>
+            <button class="fab-primary" onclick="openSandeepVoice()" title="Voice Input">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- SANDEEP GROUPS -->
+        <div class="screen" id="sandeep-groups">
+          <div class="topbar">
+            <button class="icon-btn" onclick="goToSandeep('sandeep-home')">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <div class="topbar-title">Family Groups</div>
+          </div>
+          <div id="sandeep-groups-list" style="flex:1">
+            <div class="empty-state">
+              <div class="emoji">👥</div>
+              <p>No groups created yet.<br>Create a group to invite Papa!</p>
+            </div>
+          </div>
+          <div style="padding:14px; margin-bottom: 20px">
+            <button class="btn btn-primary" style="width:100%" onclick="goToSandeep('sandeep-create-group')">Create Family Group</button>
+          </div>
+        </div>
+
+        <!-- SANDEEP CREATE GROUP -->
+        <div class="screen" id="sandeep-create-group">
+          <div class="topbar">
+            <button class="icon-btn" onclick="goToSandeep('sandeep-groups')">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <div class="topbar-title">New Group</div>
+          </div>
+          <div style="padding:14px; display:flex; flex-direction:column; gap:16px; flex:1">
+            <div class="input-wrap">
+              <label class="input-label">Group Name</label>
+              <input class="input" id="sandeep-group-name" type="text" value="Home" placeholder="e.g. Family" />
+            </div>
+            <div class="form-section-label">Invite Member</div>
+            <div class="input-wrap">
+              <label class="input-label">Nickname</label>
+              <input class="input" id="sandeep-member-name" type="text" value="Papa" />
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">Phone Number</label>
+              <input class="input" id="sandeep-member-phone" type="text" value="9876543210" />
+            </div>
+          </div>
+          <div style="padding:14px; margin-bottom: 20px">
+            <button class="btn btn-primary" style="width:100%" onclick="submitSandeepGroup()">Create Group & Invite</button>
+          </div>
+        </div>
+
+        <!-- SANDEEP GROUP MEMBERS -->
+        <div class="screen" id="sandeep-group-members">
+          <div class="topbar">
+            <button class="icon-btn" onclick="goToSandeep('sandeep-groups')">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <div class="topbar-title">Home Members</div>
+          </div>
+          <div style="flex:1">
+            <div class="member-row">
+              <div>Sandeep <span class="member-role">Owner</span></div>
+              <span class="member-status accepted">ACCEPTED</span>
+            </div>
+            <div class="member-row">
+              <div>Papa <span class="member-role">Member</span></div>
+              <span class="member-status pending" id="sandeep-papa-status">PENDING</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SANDEEP VOICE INPUT OVERLAY -->
+        <div class="voice-overlay" id="sandeep-voice-overlay">
+          <div class="voice-headline">Listening...</div>
+          <div class="voice-sub">Speak naturally now</div>
+          <div class="visualizer-container" id="sandeep-visualizer">
+            <div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div><div class="visualizer-bar"></div>
+          </div>
+          <div class="transcript-card">
+            <span class="transcript-text" id="sandeep-transcript-txt">
+              <span class="transcript-placeholder">Start speaking now...</span>
+            </span>
+          </div>
+          <!-- Language Selection -->
+          <div class="lang-toggle">
+            <button class="chip active" id="sandeep-v-en" onclick="setSandeepVoiceLang('en')">🇬🇧 English</button>
+            <button class="chip"        id="sandeep-v-hi" onclick="setSandeepVoiceLang('hi')">🇮🇳 Hindi</button>
+          </div>
+          <div class="voice-sim-box">
+            <div class="voice-sim-title">💡 Mock Speech (Click to speak)</div>
+            <div class="voice-sim-grid">
+              <button class="voice-sim-btn" onclick="simulateSandeepSpeech('Tell Papa to take his medicine at 8 PM every day')">"Tell Papa to take his medicine at 8 PM every day"</button>
+              <button class="voice-sim-btn" onclick="simulateSandeepSpeech('पापा को रोज़ रात 8 बजे दवाई लेने के लिए कहो')">"पापा को रोज़ रात 8 बजे दवाई लेने के लिए कहो"</button>
+              <button class="voice-sim-btn" onclick="simulateSandeepSpeech('Remind me to drink water in 10 minutes')">"Remind me to drink water in 10 minutes"</button>
+            </div>
+          </div>
+          <button class="btn btn-outline" style="width:100%" onclick="closeSandeepVoice()">Cancel</button>
+        </div>
+
+        <!-- SANDEEP CONFIRMATION SCREEN -->
+        <div class="screen" id="sandeep-confirm-screen">
+          <div class="topbar">
+            <button class="icon-btn" onclick="goToSandeep('sandeep-home')">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <div class="topbar-title">Confirm</div>
+          </div>
+          <div class="confirm-body">
+            <div class="card parsed-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px">
+                <span class="badge">🤖 Auto Parsed</span>
+                <span class="recipient-tag" id="sandeep-conf-recipient">👤 Self</span>
+              </div>
+              <p style="font-size:11px; color:var(--text2)">Target recipient identified from speech.</p>
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">Title</label>
+              <input class="input" id="sandeep-conf-title" type="text" />
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">Message</label>
+              <textarea class="input" id="sandeep-conf-message" rows="3"></textarea>
+            </div>
+            <div class="form-section-label">When</div>
+            <div class="datetime-row">
+              <div class="datetime-chip">📅 <span id="sandeep-conf-date">Today</span></div>
+              <div class="datetime-chip">🕐 <span id="sandeep-conf-time">8:00 PM</span></div>
+            </div>
+            <div class="form-section-label">Recurrence</div>
+            <div class="recurrence-option selected"><div class="radio"></div><span class="recurrence-label" id="sandeep-conf-recurrence">Once</span></div>
+          </div>
+          <div class="save-bar">
+            <button class="btn btn-outline" style="width:40%" onclick="openSandeepVoice()">🎙️ Retry</button>
+            <button class="btn btn-primary" style="width:60%" onclick="saveSandeepReminder()">🔔 Confirm</button>
+          </div>
+        </div>
+
+        <!-- SANDEEP MANUAL ADD -->
+        <div class="screen" id="sandeep-add">
+          <div class="topbar">
+            <button class="icon-btn" onclick="goToSandeep('sandeep-home')">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <div class="topbar-title">New Reminder</div>
+          </div>
+          <div style="padding:14px; display:flex; flex-direction:column; gap:16px; flex:1">
+            <div class="input-wrap">
+              <label class="input-label">Title</label>
+              <input class="input" id="sandeep-manual-title" type="text" value="Personal Break" />
+            </div>
+            <div class="input-wrap">
+              <label class="input-label">Spoken Message</label>
+              <input class="input" id="sandeep-manual-message" type="text" value="Take a walk and stretch" />
+            </div>
+          </div>
+          <div style="padding:14px; margin-bottom: 20px">
+            <button class="btn btn-primary" style="width:100%" onclick="saveSandeepManual()">🔔 Set Reminder</button>
+          </div>
+        </div>
+
+      </div><!-- /sandeep-screens -->
+
+      <div class="bottom-nav">
+        <div class="nav-item active" id="sandeep-nav-home" onclick="goToSandeep('sandeep-home')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Home
+        </div>
+        <div class="nav-item" id="sandeep-nav-groups" onclick="goToSandeep('sandeep-groups')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Groups
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">Sandeep (Sender)</div>
+  </div>
+
+  <!-- ==========================================
+       CENTER COLUMN: INTERACTIVE CLOUD NODE
+  =========================================== -->
+  <div class="cloud-col">
+    <!-- Pulse Dots -->
+    <div class="pulse-dot" id="pulse-sandeep-to-cloud"></div>
+    <div class="pulse-dot" id="pulse-cloud-to-papa"></div>
+    <div class="pulse-dot" id="pulse-papa-to-cloud"></div>
+    <div class="pulse-dot" id="pulse-cloud-to-sandeep"></div>
+
+    <div class="cloud-node">☁️</div>
+    <div class="cloud-label">EchoCare Cloud<br><span style="color:var(--text2); font-size:10px">Firestore & FCM</span></div>
+    
+    <div class="connection-line line-left"></div>
+    <div class="connection-line line-right"></div>
+  </div>
+
+  <!-- ==========================================
+       RIGHT PHONE: PAPA (RECIPIENT)
+  =========================================== -->
+  <div>
+    <div class="phone" id="phone-papa">
+      <div class="status-bar">
+        <span id="papa-time">9:41</span>
+        <span>Papa's Phone</span>
+        <span>🔋 92%</span>
+      </div>
+
+      <div class="screens" id="papa-screens">
+        
+        <!-- PAPA HOME -->
+        <div class="screen active" id="papa-home">
+          <div class="topbar">
+            <div style="flex:1">
+              <div class="topbar-title">Hello, Papa! 👋</div>
+              <div class="topbar-sub" id="papa-date">Sun, 14 June</div>
+            </div>
+            <!-- Groups icon with badge -->
+            <button class="icon-btn" onclick="goToPapa('papa-groups')" title="Group Invites">
+              <div class="notif-badge" id="papa-group-badge"></div>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="stats-banner">
+            <div>
+              <div class="stats-num" id="papa-stats-count">0</div>
+              <div class="stats-lbl">Active Reminders</div>
+            </div>
+            <div class="stats-icon">🔔</div>
+          </div>
+
+          <div class="section-hdr">⏰ Scheduled for you</div>
+          <div id="papa-reminders-list" style="flex:1; overflow-y:auto">
+            <div class="empty-state">
+              <div class="emoji">💤</div>
+              <p>No active reminders.<br>Awaiting remote schedule sync...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAPA GROUPS (INVITATIONS) -->
+        <div class="screen" id="papa-groups">
+          <div class="topbar">
+            <button class="icon-btn" onclick="goToPapa('papa-home')">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <div class="topbar-title">Invitations</div>
+          </div>
+          <div style="padding:14px; flex:1">
+            <div class="form-section-label" style="margin-bottom:12px">Pending Invites</div>
+            <div id="papa-invite-box" style="display:none">
+              <div class="card" style="display:flex; flex-direction:column; gap:12px; border-color:var(--primary)">
+                <div>
+                  <h4 style="font-weight:700">Group: Home</h4>
+                  <p style="font-size:12px; color:var(--text2)">Invited by Sandeep</p>
+                </div>
+                <div style="display:flex; gap:8px">
+                  <button class="btn btn-outline" style="flex:1; height:34px; font-size:12px" onclick="rejectPapaInvite()">Decline</button>
+                  <button class="btn btn-primary" style="flex:1; height:34px; font-size:12px" onclick="acceptPapaInvite()">Accept</button>
+                </div>
+              </div>
+            </div>
+            <div id="papa-no-invites" class="empty-state" style="padding-top:40px">
+              <div class="emoji">💌</div>
+              <p>No pending invitations.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- PAPA ALARM SCREEN -->
+        <div class="screen" id="alarm-papa">
+          <div class="alarm-inner">
+            <div class="clock-display">
+              <div class="clock-time" id="papa-alarm-clock">8:00</div>
+              <div class="clock-ampm" id="papa-alarm-ampm">PM</div>
+            </div>
+            <div class="alarm-bell">🔔</div>
+            <div class="tts-row" id="papa-tts-indicator">
+              <div class="tts-wave"><span></span><span></span><span></span><span></span><span></span></div>
+              Speaking reminder…
+            </div>
+            <div class="alarm-card">
+              <div class="alarm-title" id="papa-alarm-title">BP Medication</div>
+              <div class="alarm-message" id="papa-alarm-message">Papa, please take your blood pressure medication</div>
+            </div>
+            <div class="alarm-btns">
+              <button class="btn btn-primary" style="width:100%" onclick="acknowledgePapaAlarm()">✅ Acknowledge</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /papa-screens -->
+
+      <div class="bottom-nav">
+        <div class="nav-item active" id="papa-nav-home" onclick="goToPapa('papa-home')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Home
+        </div>
+        <div class="nav-item" id="papa-nav-groups" onclick="goToPapa('papa-groups')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Invites
+        </div>
+      </div>
+    </div>
+    <div class="phone-label">Papa (Recipient)</div>
+  </div>
+
+</div><!-- /playground -->
+
+<!-- ── Interactive Console / Steps Guidance ────────────────────── -->
+<div class="interactive-console">
+  <div class="console-title">📖 Guided Walkthrough Instructions</div>
+  <ol class="step-list">
+    <li class="step-item active-step" id="step1"><strong>Step 1: Invite Papa to a Group</strong> — On Sandeep's phone (left), navigate to <strong>Groups</strong> → Tap <strong>Create Family Group</strong> → Tap <strong>Create Group & Invite</strong>. Watch the invitation sync to the Cloud!</li>
+    <li class="step-item" id="step2"><strong>Step 2: Accept invitation on Papa's device</strong> — Tapping Create Group on Sandeep's phone sends the invite. On Papa's phone (right), notice the red badge on the top right, tap the invite icon, and click <strong>Accept</strong> on the invitation card. Watch it sync back to Sandeep's screen.</li>
+    <li class="step-item" id="step3"><strong>Step 3: Create a cross-device voice reminder</strong> — On Sandeep's phone (left), tap the <strong>Home icon</strong> → Click the <strong>Microphone FAB</strong> (purple mic icon) → click the first simulation command: <em>"Tell Papa to take his medicine at 8 PM every day"</em>. Tap <strong>Confirm</strong> on the Confirmation screen.</li>
+    <li class="step-item" id="step4"><strong>Step 4: Watch the FCM push delivery sync</strong> — On clicking confirm, watch the reminder sync packet animate from Sandeep's phone to the Cloud icon, and watch the FCM push notification dispatch directly to Papa's phone! The BP Medication reminder card will instantly slide onto Papa's Home screen dashboard.</li>
+    <li class="step-item" id="step5"><strong>Step 5: Trigger alarm & listen to TTS</strong> — On Papa's phone, hover over the BP Medication reminder card and tap **"🔔 Firing Test"** to trigger the lock screen. Listen to the voice synthesize: <em>"Papa, please take your medicine"</em>. Tap **Acknowledge** to stop it, which updates Sandeep's screen status to Acknowledged!</li>
+  </ol>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     JAVASCRIPT SIMULATION LOGIC
+════════════════════════════════════════════════════════════════ -->
+<script>
+// ── Shared States ─────────────────────────────────────────────────────────────
+let sandeepState = {
+  currentScreen: 'sandeep-home',
+  prevScreen: null,
+  groups: [],
+  reminders: [],
+  voiceLang: 'en'
+};
+
+let papaState = {
+  currentScreen: 'papa-home',
+  prevScreen: null,
+  invitations: [],
+  reminders: []
+};
+
+// ── Clock Initialization ───────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  const timeStr = `${h % 12 || 12}:${String(m).padStart(2,'0')}`;
+  
+  document.getElementById('sandeep-time').textContent = timeStr;
+  document.getElementById('papa-time').textContent = timeStr;
+  document.getElementById('papa-alarm-clock').textContent = timeStr;
+  document.getElementById('papa-alarm-ampm').textContent = h >= 12 ? 'PM' : 'AM';
+}
+setInterval(updateClock, 30000);
+updateClock();
+
+// ── Sandeep Navigation ─────────────────────────────────────────────────────────
+function goToSandeep(screen) {
+  const curr = document.getElementById(sandeepState.currentScreen);
+  curr?.classList.remove('active');
+  sandeepState.prevScreen = sandeepState.currentScreen;
+  sandeepState.currentScreen = screen;
+  document.getElementById(screen)?.classList.add('active');
+
+  // Bottom Nav highlight
+  document.querySelectorAll('#phone-sandeep .nav-item').forEach(el => el.classList.remove('active'));
+  if (screen === 'sandeep-home') document.getElementById('sandeep-nav-home').classList.add('active');
+  if (screen === 'sandeep-groups' || screen === 'sandeep-group-members') document.getElementById('sandeep-nav-groups').classList.add('active');
+
+  if (screen === 'sandeep-home') renderSandeepReminders();
+}
+
+// ── Papa Navigation ────────────────────────────────────────────────────────────
+function goToPapa(screen) {
+  const curr = document.getElementById(papaState.currentScreen);
+  curr?.classList.remove('active');
+  papaState.prevScreen = papaState.currentScreen;
+  papaState.currentScreen = screen;
+  document.getElementById(screen)?.classList.add('active');
+
+  // Bottom Nav highlight
+  document.querySelectorAll('#phone-papa .nav-item').forEach(el => el.classList.remove('active'));
+  if (screen === 'papa-home') document.getElementById('papa-nav-home').classList.add('active');
+  if (screen === 'papa-groups') document.getElementById('papa-nav-groups').classList.add('active');
+  
+  if (screen === 'papa-home') renderPapaReminders();
+}
+
+// ── Guided walkthrough updates ────────────────────────────────────────────────
+function advanceWalkthroughStep(currentId, nextId) {
+  document.getElementById(currentId).classList.remove('active-step');
+  document.getElementById(nextId).classList.add('active-step');
+}
+
+// ── Step 1: Sandeep invites Papa ──────────────────────────────────────────────
+function submitSandeepGroup() {
+  const gName = document.getElementById('sandeep-group-name').value.trim();
+  const mName = document.getElementById('sandeep-member-name').value.trim();
+  const mPhone = document.getElementById('sandeep-member-phone').value.trim();
+
+  if (!gName || !mName || !mPhone) {
+    showToast("Please fill all group fields.");
+    return;
+  }
+
+  // Animation: Pulse from Sandeep to Cloud
+  animatePulse('pulse-sandeep-to-cloud', 'send-left', 1200, () => {
+    // Save Group local representation
+    sandeepState.groups.push({ id: 'home_group', name: gName, memberName: mName, status: 'PENDING' });
+    
+    // Push Invitation to Papa
+    papaState.invitations.push({ groupId: 'home_group', sender: 'Sandeep', groupName: gName });
+
+    // Render lists
+    renderSandeepGroups();
+    
+    // Trigger invite indicator on Papa
+    document.getElementById('papa-group-badge').style.display = 'block';
+    document.getElementById('papa-no-invites').style.display = 'none';
+    document.getElementById('papa-invite-box').style.display = 'block';
+
+    showToast("Group created, invite synced to Cloud! ☁️");
+    goToSandeep('sandeep-groups');
+
+    // Advance walkthrough step
+    advanceWalkthroughStep('step1', 'step2');
+  });
+}
+
+function renderSandeepGroups() {
+  const list = document.getElementById('sandeep-groups-list');
+  if (sandeepState.groups.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="emoji">👥</div><p>No groups created yet.<br>Create a group to invite Papa!</p></div>`;
+    return;
+  }
+  list.innerHTML = sandeepState.groups.map(g => `
+    <div class="group-row" onclick="goToSandeep('sandeep-group-members')">
+      <div class="group-letter">${g.name[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <h4 style="font-weight:700">${g.name}</h4>
+        <p style="font-size:11px; color:var(--text2)">Status: ${g.status === 'PENDING' ? 'Awaiting members...' : 'Active'}</p>
+      </div>
+      <span class="badge" style="background:rgba(34,211,238,.15); color:var(--secondary)">Members: 2</span>
+    </div>
+  `).join('');
+}
+
+// ── Step 2: Accept invitation on Papa ─────────────────────────────────────────
+function acceptPapaInvite() {
+  // Animation: Pulse from Papa to Cloud
+  animatePulse('pulse-papa-to-cloud', 'reply-right-back', 1200, () => {
+    // Accept invitation
+    papaState.invitations = [];
+    document.getElementById('papa-group-badge').style.display = 'none';
+    document.getElementById('papa-invite-box').style.display = 'none';
+    document.getElementById('papa-no-invites').style.display = 'block';
+
+    // Sync state to Sandeep
+    const group = sandeepState.groups.find(g => g.id === 'home_group');
+    if (group) {
+      group.status = 'ACTIVE';
+    }
+    document.getElementById('sandeep-papa-status').textContent = 'ACCEPTED';
+    document.getElementById('sandeep-papa-status').classList.remove('pending');
+    document.getElementById('sandeep-papa-status').classList.add('accepted');
+
+    renderSandeepGroups();
+    
+    // Animation back: Cloud to Sandeep notification
+    animatePulse('pulse-cloud-to-sandeep', 'reply-left-back', 1200, () => {
+      showToast("Sandeep's member roster updated to ACCEPTED! Roster synced.");
+      goToPapa('papa-home');
+      advanceWalkthroughStep('step2', 'step3');
+    });
+  });
+}
+
+function rejectPapaInvite() {
+  papaState.invitations = [];
+  document.getElementById('papa-group-badge').style.display = 'none';
+  document.getElementById('papa-invite-box').style.display = 'none';
+  document.getElementById('papa-no-invites').style.display = 'block';
+  showToast("Invitation declined.");
+  goToPapa('papa-home');
+}
+
+// ── Step 3: Create a cross-device voice reminder ──────────────────────────────
+let sandeepSpeechInterval = null;
+
+function openSandeepVoice() {
+  const overlay = document.getElementById('sandeep-voice-overlay');
+  overlay.classList.add('active');
+  document.getElementById('sandeep-transcript-txt').innerHTML = '<span class="transcript-placeholder">Start speaking now...</span>';
+  
+  // Wave animation
+  const bars = document.querySelectorAll('#sandeep-visualizer .visualizer-bar');
+  sandeepSpeechInterval = setInterval(() => {
+    bars.forEach(bar => {
+      bar.style.height = `${Math.random() * 35 + 5}px`;
+    });
+  }, 100);
+}
+
+function setSandeepVoiceLang(lang) {
+  sandeepState.voiceLang = lang;
+  document.getElementById('sandeep-v-en').classList.toggle('active', lang === 'en');
+  document.getElementById('sandeep-v-hi').classList.toggle('active', lang === 'hi');
+}
+
+function closeSandeepVoice() {
+  document.getElementById('sandeep-voice-overlay').classList.remove('active');
+  clearInterval(sandeepSpeechInterval);
+}
+
+function simulateSandeepSpeech(text) {
+  document.getElementById('sandeep-transcript-txt').textContent = text;
+  setTimeout(() => {
+    closeSandeepVoice();
+    processSandeepTranscript(text);
+  }, 800);
+}
+
+function processSandeepTranscript(text) {
+  let lower = text.toLowerCase();
+  let title = "Family Alert";
+  let message = text;
+  let recipient = "Self";
+  let timeStr = "8:00 PM";
+  let recurrence = "Once";
+
+  // Check English recipient
+  if (lower.includes("tell papa") || lower.includes("remind papa")) {
+    recipient = "Papa";
+    message = text.replace(/^(?:tell|remind)\s+papa\s+to/i, "").trim();
+  }
+  // Check Hindi recipient
+  if (lower.includes("पापा को")) {
+    recipient = "Papa";
+    message = text.replace(/पापा को/g, "").replace(/लेने के लिए कहो/g, "").replace(/कहो/g, "").trim();
+  }
+
+  // Time matching
+  if (lower.includes("8 pm") || lower.includes("8 बजे") || lower.includes("रात 8")) {
+    timeStr = "8:00 PM";
+  }
+
+  // Recurrence matching
+  if (lower.includes("every day") || lower.includes("रोज़") || lower.includes("रोजाना")) {
+    recurrence = "Daily";
+  }
+
+  // Cleanup message formatting
+  message = message.charAt(0).toUpperCase() + message.slice(1);
+  title = message.split(" ").slice(0, 2).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+
+  // Load confirm screen data
+  document.getElementById('sandeep-conf-title').value = title;
+  document.getElementById('sandeep-conf-message').value = recipient === 'Papa' ? `Papa, ${message}` : message;
+  document.getElementById('sandeep-conf-recipient').textContent = `👤 ${recipient}`;
+  document.getElementById('sandeep-conf-time').textContent = timeStr;
+  document.getElementById('sandeep-conf-recurrence').textContent = recurrence;
+
+  // Stash temp values
+  sandeepState.tempReminder = { title, message, recipient, timeStr, recurrence };
+
+  goToSandeep('sandeep-confirm-screen');
+}
+
+// ── Step 4: Confirm & Push via FCM ────────────────────────────────────────────
+function saveSandeepReminder() {
+  const r = sandeepState.tempReminder;
+  r.title = document.getElementById('sandeep-conf-title').value;
+  r.message = document.getElementById('sandeep-conf-message').value;
+  r.id = Date.now().toString();
+  r.status = "SYNCING";
+
+  // Add locally to Sandeep
+  sandeepState.reminders.push(r);
+  renderSandeepReminders();
+  goToSandeep('sandeep-home');
+
+  showToast("Syncing shared reminder to Cloud... ☁️");
+
+  // Step 4.1: Send to cloud
+  animatePulse('pulse-sandeep-to-cloud', 'send-left', 1200, () => {
+    r.status = "SENT_PUSH";
+    renderSandeepReminders();
+    showToast("Cloud DB updated. Firing FCM Push to Papa's phone! 📡");
+
+    // Step 4.2: FCM Push to Papa's Phone
+    animatePulse('pulse-cloud-to-papa', 'send-right', 1200, () => {
+      // Add to Papa's reminder list
+      papaState.reminders.push({
+        id: r.id,
+        title: r.title,
+        message: r.message,
+        timeStr: r.timeStr,
+        recurrence: r.recurrence,
+        creator: 'Sandeep'
+      });
+      
+      renderPapaReminders();
+      showToast("FCM Push notification delivered to Papa's device! Spoken alarm scheduled.");
+      
+      advanceWalkthroughStep('step3', 'step4');
+      setTimeout(() => advanceWalkthroughStep('step4', 'step5'), 1800);
+    });
+  });
+}
+
+function renderSandeepReminders() {
+  const list = document.getElementById('sandeep-reminders-list');
+  if (sandeepState.reminders.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="emoji">💤</div><p>No active reminders.<br>Tap Mic to speak a reminder!</p></div>`;
+    return;
+  }
+  list.innerHTML = sandeepState.reminders.map(r => `
+    <div class="rem-card">
+      <div class="rem-accent ${r.recipient==='Papa' ? 'remote' : ''}"></div>
+      <div class="rem-body">
+        <div class="rem-title">${escHtml(r.title)}</div>
+        <div class="rem-msg">${escHtml(r.message)}</div>
+        <div class="rem-time">⏰ Today, ${r.timeStr} &nbsp;<span class="badge" style="background:rgba(34,211,238,.15); color:var(--secondary)">To: ${r.recipient}</span></div>
+      </div>
+      <div class="rem-actions">
+        <span style="font-size:10px; font-weight:700; color:${r.status==='ACKNOWLEDGED'?'#7eeef9':'var(--text2)'}">${r.status}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderPapaReminders() {
+  const list = document.getElementById('papa-reminders-list');
+  if (papaState.reminders.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="emoji">💤</div><p>No active reminders.<br>Awaiting remote schedule sync...</p></div>`;
+    return;
+  }
+  list.innerHTML = papaState.reminders.map(r => `
+    <div class="rem-card">
+      <div class="rem-accent remote"></div>
+      <div class="rem-body">
+        <div class="rem-title">${escHtml(r.title)}</div>
+        <div class="rem-msg">${escHtml(r.message)}</div>
+        <div class="rem-time">⏰ Today, ${r.timeStr} &nbsp;<span class="badge">From: ${r.creator}</span></div>
+      </div>
+      <div class="rem-actions" style="justify-content:center">
+        <button class="btn btn-outline" style="height:28px; font-size:10px; padding:0 8px" onclick="triggerPapaAlarm('${r.id}')">🔔 Fire Test</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Step 5: Trigger alarm on Papa & Listen to TTS ──────────────────────────────
+let activePapaReminderId = null;
+
+function triggerPapaAlarm(reminderId) {
+  const r = papaState.reminders.find(rem => rem.id === reminderId);
+  if (!r) return;
+  activePapaReminderId = reminderId;
+
+  document.getElementById('papa-alarm-title').textContent = r.title;
+  document.getElementById('papa-alarm-message').textContent = r.message;
+  
+  goToPapa('alarm-papa');
+  
+  // Browser Speech synthesis
+  speakText(r.message);
+}
+
+function acknowledgePapaAlarm() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  goToPapa('papa-home');
+
+  showToast("Sending acknowledgement sync back to Cloud... ☁️");
+
+  // Step 5.1: Papa sends ack to Cloud
+  animatePulse('pulse-papa-to-cloud', 'reply-right-back', 1200, () => {
+    // Step 5.2: Cloud sends notification back to Sandeep
+    animatePulse('pulse-cloud-to-sandeep', 'reply-left-back', 1200, () => {
+      // Update Sandeep's local list status
+      const reminder = sandeepState.reminders.find(rem => rem.id === activePapaReminderId);
+      if (reminder) {
+        reminder.status = "ACKNOWLEDGED";
+      }
+      renderSandeepReminders();
+      showToast("✅ Delivery acknowledged! Sandeep's screen updated to Acknowledged.");
+    });
+  });
+}
+
+// ── Personal Manual Fallback ──────────────────────────────────────────────────
+function saveSandeepManual() {
+  const title = document.getElementById('sandeep-manual-title').value.trim();
+  const message = document.getElementById('sandeep-manual-message').value.trim();
+  if (!title || !message) return;
+  sandeepState.reminders.push({ id: Date.now().toString(), title, message, recipient: 'Self', timeStr: '10:00 AM', status: 'LOCAL' });
+  renderSandeepReminders();
+  goToSandeep('sandeep-home');
+}
+
+// ── Simulated utilities ────────────────────────────────────────────────────────
+function animatePulse(dotId, animationName, duration, callback) {
+  const dot = document.getElementById(dotId);
+  dot.style.display = 'block';
+  dot.style.animation = `${animationName} ${duration}ms linear forwards`;
+  setTimeout(() => {
+    dot.style.display = 'none';
+    dot.style.animation = '';
+    if (callback) callback();
+  }, duration);
+}
+
+function speakText(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const ut = new SpeechSynthesisUtterance(text);
+  ut.lang = text.match(/[\u0900-\u097F]/) ? 'hi-IN' : 'en-IN';
+  window.speechSynthesis.speak(ut);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function resetApp() {
+  sandeepState.groups = [];
+  sandeepState.reminders = [];
+  papaState.invitations = [];
+  papaState.reminders = [];
+  
+  document.getElementById('sandeep-papa-status').textContent = 'PENDING';
+  document.getElementById('sandeep-papa-status').className = 'member-status pending';
+  document.getElementById('papa-group-badge').style.display = 'none';
+  document.getElementById('papa-invite-box').style.display = 'none';
+  document.getElementById('papa-no-invites').style.display = 'block';
+  
+  goToSandeep('sandeep-home');
+  goToPapa('papa-home');
+  showToast("Playground reset successfully!");
+
+  // Reset walkthrough highlights
+  document.querySelectorAll('.step-item').forEach(el => el.classList.remove('active-step'));
+  document.getElementById('step1').classList.add('active-step');
+}
+</script>
+</body>
+</html>

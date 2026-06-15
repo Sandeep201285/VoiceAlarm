@@ -1,0 +1,14 @@
+{
+  "name": "voice-alarm-backend",
+  "version": "1.0.0",
+  "description": "Production Backend for Voice Alarm (EchoCare) App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "firebase-admin": "^12.1.0",
+    "dotenv": "^16.4.5"
+  }
+}

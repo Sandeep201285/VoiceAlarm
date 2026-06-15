@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Voice Alarm</string>
+    <string name="notification_channel_alarm_name">Reminders</string>
+    <string name="notification_channel_alarm_desc">Voice Alarm reminder alerts</string>
+    <string name="notification_channel_service_name">Voice Alarm Running</string>
+    <string name="notification_channel_service_desc">Voice Alarm service</string>
+    <string name="action_acknowledge">Acknowledge</string>
+    <string name="action_snooze">Snooze 5 min</string>
+</resources>

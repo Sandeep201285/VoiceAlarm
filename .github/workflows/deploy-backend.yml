@@ -1,0 +1,49 @@
+name: Deploy Backend to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'EchoCareBackend/**'
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }} # Google Cloud Project ID
+  REGION: us-central1                        # Preferred region
+  SERVICE_NAME: voice-alarm-api             # Cloud Run service name
+
+jobs:
+  deploy:
+    name: Deploy Container to Cloud Run
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }} # GCP Service Account Key
+
+      - name: Set Up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker authentication
+        run: |
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Build and Push Docker Container
+        run: |
+          IMAGE_TAG="us-central1-docker.pkg.dev/$PROJECT_ID/voice-alarm-repo/$SERVICE_NAME:${{ github.sha }}"
+          docker build -t $IMAGE_TAG ./EchoCareBackend
+          docker push $IMAGE_TAG
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          image: ${{ env.IMAGE_TAG }}
+          region: ${{ env.REGION }}
+          flags: '--allow-unauthenticated' # Set public exposure for mobile API communication

@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voice Alarm – Single-Screen Mobile Voice Alarms</title>
+<style>
+  /* ── Reset & Core Theme ───────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --bg-dark:    #05060F;
+    --bg-app:     #0A0B1A;
+    --surface:    rgba(18, 20, 43, 0.75);
+    --surfvar:    rgba(28, 31, 61, 0.85);
+    --card:       rgba(26, 29, 56, 0.8);
+    --outline:    rgba(139, 92, 246, 0.25);
+    --primary:    #8B5CF6;
+    --primary-gr: linear-gradient(135deg, #8B5CF6, #EC4899);
+    --secondary:  #22D3EE;
+    --amber:      #F59E0B;
+    --error:      #EF4444;
+    --success:    #10B981;
+    --text:       #E8E9FF;
+    --text-muted: #8B8FA8;
+    --radius-lg:  24px;
+    --radius-md:  16px;
+    --transition: 0.35s cubic-bezier(.4,0,.2,1);
+    --shadow:     0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  body {
+    background: var(--bg-dark);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 24px 16px;
+    font-family: 'Outfit', -apple-system, sans-serif;
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── Header ──────────────────────────────────────────────────────── */
+  .page-header {
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    background: var(--primary-gr);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .page-header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* ── Mobile Device Wrapper ────────────────────────────────────────── */
+  .phone-wrapper {
+    width: 375px;
+    height: 780px;
+    background: var(--bg-app);
+    border-radius: 48px;
+    border: 4px solid #1F213A;
+    box-shadow: 0 24px 64px rgba(0,0,0,.8), 0 0 80px rgba(139,92,246,.08);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(8px);
+    transition: var(--transition);
+  }
+
+  /* Responsive Mobile Adaptation */
+  @media (max-width: 480px) {
+    .phone-wrapper {
+      width: 100%;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+      box-shadow: none;
+    }
+    body {
+      padding: 0;
+    }
+    .page-header {
+      display: none;
+    }
+  }
+
+  /* Status Bar */
+  .status-bar {
+    height: 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    z-index: 100;
+    user-select: none;
+  }
+
+  /* Scrollable App Container */
+  .app-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .app-container::-webkit-scrollbar {
+    width: 4px;
+  }
+  .app-container::-webkit-scrollbar-thumb {
+    background: var(--outline);
+    border-radius: 4px;
+  }
+
+  /* App Bar */
+  .app-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .app-brand {
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .app-brand span {
+    background: var(--primary-gr);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .gear-icon {
+    font-size: 20px;
+    cursor: pointer;
+    transition: var(--transition);
+    color: var(--text-muted);
+  }
+  .gear-icon:hover {
+    transform: rotate(45deg);
+    color: #fff;
+  }
+
+  /* Widgets and Cards (Glassmorphism) */
+  .card-widget {
+    background: var(--surface);
+    border: 1px solid var(--outline);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .widget-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Voice Command Section */
+  .voice-card {
+    background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(34,211,238,0.05));
+    border: 1.5px solid var(--primary);
+  }
+  .voice-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .voice-waveform {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 24px;
+    margin: 8px 0;
+  }
+  .voice-wave-bar {
+    width: 3px;
+    height: 100%;
+    background: var(--secondary);
+    border-radius: 9px;
+    animation: wave-pulse 1.2s ease-in-out infinite;
+  }
+  .voice-wave-bar:nth-child(2) { animation-delay: 0.15s; }
+  .voice-wave-bar:nth-child(3) { animation-delay: 0.3s; }
+  .voice-wave-bar:nth-child(4) { animation-delay: 0.45s; }
+  @keyframes wave-pulse {
+    0%, 100% { height: 4px; }
+    50% { height: 20px; }
+  }
+
+  /* Inputs & Forms */
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .input-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  .app-input {
+    background: rgba(10, 11, 26, 0.6);
+    border: 1px solid var(--outline);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    width: 100%;
+    transition: var(--transition);
+  }
+  .app-input:focus {
+    border-color: var(--secondary);
+    box-shadow: 0 0 10px rgba(34,211,238,0.25);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 700;
+    font-size: 12.5px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: inherit;
+    padding: 0 16px;
+    user-select: none;
+  }
+  .btn:active {
+    transform: scale(0.97);
+  }
+  .btn-primary {
+    background: var(--primary-gr);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(139,92,246,0.35);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 6px 18px rgba(139,92,246,0.5);
+  }
+  .btn-secondary {
+    background: var(--secondary);
+    color: var(--bg-dark);
+  }
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--outline);
+    color: var(--text);
+  }
+  .btn-outline:hover {
+    background: rgba(255,255,255,0.05);
+  }
+  .btn-block {
+    width: 100%;
+  }
+
+  /* List Items */
+  .alarm-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .alarm-item {
+    background: var(--card);
+    border: 1.5px solid rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: var(--transition);
+    animation: slide-in 0.3s ease-out;
+  }
+  @keyframes slide-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .alarm-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .alarm-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .alarm-title {
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .alarm-recipient-badge {
+    font-size: 8px;
+    background: rgba(34,211,238,0.15);
+    color: var(--secondary);
+    padding: 2px 6px;
+    border-radius: 99px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .alarm-desc {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .alarm-time-tag {
+    font-size: 10.5px;
+    color: var(--secondary);
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  /* Checkbox / Switch Toggle */
+  .switch {
+    width: 32px;
+    height: 18px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 99px;
+    position: relative;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .switch.active {
+    background: var(--success);
+  }
+  .switch::after {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    top: 2px;
+    left: 2px;
+    transition: var(--transition);
+  }
+  .switch.active::after {
+    left: 16px;
+  }
+
+  /* ── Biometric Lock Screen Overlay ────────────────────────────────── */
+  .lock-screen {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-app);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .lock-screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .lock-faceid-rim {
+    width: 100px;
+    height: 100px;
+    border-radius: 32px;
+    background: rgba(139,92,246,0.06);
+    border: 2px solid var(--outline);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    cursor: pointer;
+    position: relative;
+  }
+  .lock-faceid-rim::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+    border-radius: 38px;
+    border: 2px dashed var(--primary);
+    opacity: 0.4;
+    animation: rotate-scanner 12s linear infinite;
+  }
+  @keyframes rotate-scanner {
+    100% { transform: rotate(360deg); }
+  }
+  .lock-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .lock-subtitle {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    margin-bottom: 30px;
+  }
+
+  /* ── Settings Drawer (Slide Up) ───────────────────────────────────── */
+  .settings-drawer {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 900;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition);
+    display: flex;
+    align-items: flex-end;
+  }
+  .settings-drawer.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .drawer-content {
+    background: #111229;
+    border-top: 2px solid var(--outline);
+    border-radius: 28px 28px 0 0;
+    width: 100%;
+    max-height: 85%;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+    overflow-y: auto;
+  }
+  .settings-drawer.active .drawer-content {
+    transform: translateY(0);
+  }
+  .drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding-bottom: 12px;
+  }
+  .drawer-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+  }
+  .drawer-close {
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--text-muted);
+  }
+
+  /* ── Telemetry Debugger Logcat ────────────────────────────────────── */
+  .logcat-wrapper {
+    width: 100%;
+    max-width: 500px;
+    height: 180px;
+    background: #04050A;
+    border: 1.5px solid var(--outline);
+    border-radius: var(--radius-md);
+    margin-top: 24px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow);
+  }
+  .logcat-hdr {
+    background: #0C0E1A;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--outline);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logcat-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--secondary);
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .logcat-console {
+    flex: 1;
+    padding: 10px 14px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 10px;
+    color: #A5B4FC;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .logcat-line {
+    line-height: 1.35;
+    border-bottom: 1px solid rgba(255,255,255,0.02);
+    padding-bottom: 2px;
+  }
+  .logcat-tag {
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .logcat-sec {
+    color: var(--secondary);
+  }
+
+  /* Range sliders */
+  .slider-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .slider-val {
+    color: var(--secondary);
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header Description ── -->
+<div class="page-header">
+  <h1>Voice Alarm</h1>
+  <p>Single-Screen Responsive Dashboard Simulator (Android & iOS Web View)</p>
+</div>
+
+<!-- ── Responsive Phone Simulator Frame ── -->
+<div class="phone-wrapper">
+  
+  <!-- Status Bar (Signals) -->
+  <div class="status-bar">
+    <span id="live-clock">12:58 PM</span>
+    <span>Voice Alarm Hub</span>
+    <span>🔋 95%</span>
+  </div>
+
+  <!-- Biometric Lock Screen Overlay -->
+  <div class="lock-screen active" id="lock-screen">
+    <div class="lock-faceid-rim" onclick="performUnlock()">
+      <!-- Face ID / Touch ID Icon representation -->
+      <span style="font-size: 40px; cursor: pointer;" id="bio-icon">📱</span>
+    </div>
+    <div class="lock-title">App Locked Secured</div>
+    <div class="lock-subtitle" id="lock-instruction">Tap icon above to scan Face ID / Touch ID</div>
+    <button class="btn btn-primary" onclick="performUnlock()">Authenticate</button>
+  </div>
+
+  <!-- Slide-up settings drawer -->
+  <div class="settings-drawer" id="settings-drawer">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <div class="drawer-title">Settings & Encryption</div>
+        <div class="drawer-close" onclick="toggleSettings(false)">✕</div>
+      </div>
+
+      <!-- Biometric Toggle -->
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 13px; font-weight: 700;">Biometric App Lock</div>
+          <div style="font-size: 10px; color: var(--text-muted);">Require unlock whenever app starts</div>
+        </div>
+        <div class="switch active" id="bio-switch" onclick="toggleBioSecurity()"></div>
+      </div>
+
+      <!-- Biometric Style picker -->
+      <div class="input-group">
+        <label class="input-label">Biometric Lock Type</label>
+        <select class="app-input" id="bio-type" style="height: 38px; padding: 6px;" onchange="updateBioType()">
+          <option value="faceid">Face ID (Apple iOS style)</option>
+          <option value="fingerprint">Fingerprint Scan (Android style)</option>
+        </select>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06);" />
+
+      <!-- Voice customize -->
+      <div class="input-group">
+        <div class="slider-row">
+          <label class="input-label">Speech Pitch</label>
+          <span class="slider-val" id="pitch-val">1.0x</span>
+        </div>
+        <input type="range" min="5" max="20" value="10" class="app-input" style="height: 18px; padding: 0;" oninput="updateSpeechVal('pitch', this.value)" />
+      </div>
+
+      <div class="input-group">
+        <div class="slider-row">
+          <label class="input-label">Speech Speed Rate</label>
+          <span class="slider-val" id="speed-val">1.0x</span>
+        </div>
+        <input type="range" min="5" max="20" value="10" class="app-input" style="height: 18px; padding: 0;" oninput="updateSpeechVal('speed', this.value)" />
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.06);" />
+
+      <!-- SQLCipher backup -->
+      <div>
+        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Secure SQLCipher Encryption Database</div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-outline btn-block" onclick="mockExportBackup()">Export Encrypted Backup</button>
+          <button class="btn btn-outline btn-block" onclick="mockImportBackup()">Import Encrypted Backup</button>
+        </div>
+      </div>
+
+      <!-- App sleep triggers -->
+      <button class="btn btn-primary btn-block" onclick="simulateSleep()" style="margin-top: 8px;">Simulate Lock App Background</button>
+    </div>
+  </div>
+
+  <!-- Main Scrollable Content Dashboard -->
+  <div class="app-container">
+    
+    <!-- Custom App Header -->
+    <div class="app-bar">
+      <div class="app-brand">📢 <span>Voice Alarm</span></div>
+      <div class="gear-icon" onclick="toggleSettings(true)">⚙️</div>
+    </div>
+
+    <!-- Voice assistant helper -->
+    <div class="card-widget voice-card">
+      <div class="widget-title">🎙️ Natural Speech Assistant</div>
+      <div style="font-size: 11px; color: var(--text-muted);">Create alarms naturally (e.g. "Wake me up at 6 AM" or "Tell Mom to walk at 5 PM")</div>
+      
+      <div class="voice-input-row">
+        <input class="app-input" id="voice-txt" placeholder="Or type voice command..." type="text" />
+        <button class="btn btn-secondary" onclick="simulateVoiceInput()">Speak</button>
+      </div>
+
+      <!-- Pulse animation helper -->
+      <div class="voice-waveform" id="waveform">
+        <div class="voice-wave-bar"></div>
+        <div class="voice-wave-bar"></div>
+        <div class="voice-wave-bar"></div>
+        <div class="voice-wave-bar"></div>
+        <div class="voice-wave-bar"></div>
+      </div>
+    </div>
+
+    <!-- Section 1: Personal Voice Alarms -->
+    <div class="card-widget">
+      <div class="widget-title">⏰ Personal Voice Alarms</div>
+
+      <div class="alarm-list-container" id="personal-alarm-list">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 11px; font-weight: 700; color: var(--text);">Quick Add Personal Alarm</div>
+        <input class="app-input" id="p-title" placeholder="Alarm Title (e.g. Drink Water)" type="text" />
+        <input class="app-input" id="p-msg" placeholder="Voice Msg announcement" type="text" />
+        
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input class="app-input" id="p-time" type="time" value="08:00" style="flex: 1;" />
+          <button class="btn btn-primary" onclick="addPersonalAlarm()">Save Alarm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Family Care & Group Sharing -->
+    <div class="card-widget">
+      <div class="widget-title">👥 Family Care Hub</div>
+
+      <!-- Creation Form: Shown only if group does not exist -->
+      <div id="group-creation-box" style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 11.5px; color: var(--text-muted);">Set up family care group to send remote voice alarms.</div>
+        <input class="app-input" id="g-name" placeholder="Group Name (e.g. Parent Care)" type="text" />
+        <input class="app-input" id="gm-name" placeholder="Member Nickname (e.g. Papa)" type="text" />
+        <input class="app-input" id="gm-phone" placeholder="Member Phone (e.g. +91 9988776655)" type="text" />
+        <button class="btn btn-primary btn-block" onclick="createFamilyGroup()">Create Group & Send Invite</button>
+      </div>
+
+      <!-- Shared Alarms Dashboard: Shown once group exists -->
+      <div id="group-active-box" style="display: none; flex-direction: column; gap: 12px;">
+        <div style="background: rgba(255,255,255,0.02); border: 1px dashed var(--outline); padding: 10px; border-radius: 10px;">
+          <div style="font-weight: 700; font-size: 12.5px;" id="lbl-group-name">Group Name</div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 11px;">
+            <span id="lbl-member-info">Papa (+91 9988776655)</span>
+            <span style="color: var(--success); font-weight: 800; letter-spacing: 0.5px;" id="lbl-invite-status">PENDING</span>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 11.5px; font-weight: 700;">Send Shared Voice Alarm to Recipient</div>
+          <input class="app-input" id="g-alarm-msg" placeholder="Voice Reminder Message" type="text" />
+          
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input class="app-input" id="g-alarm-time" type="time" value="20:00" style="flex: 1;" />
+            <button class="btn btn-primary" onclick="sendSharedGroupAlarm()">Send Alarm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Diagnostics Logcat Console ── -->
+<div class="logcat-wrapper">
+  <div class="logcat-hdr">
+    <div class="logcat-title">📟 Console Telemetry Stream (SQLCipher Database & Network Logs)</div>
+    <button class="btn btn-outline" style="height: 22px; font-size: 9px; padding: 0 8px; border-radius: 6px;" onclick="clearTelemetry()">Clear</button>
+  </div>
+  <div class="logcat-console" id="logcat-stream"></div>
+</div>
+
+<!-- ── Scripts Logic ── -->
+<script>
+  let biometricLockActive = true;
+  let biometricStyle = "faceid"; // faceid or fingerprint
+  let biometricEnabled = true;
+
+  let speechPitch = 1.0;
+  let speechSpeed = 1.0;
+
+  let personalAlarms = [
+    { id: 101, title: "Stretch break", message: "Stretch and walk around", time: "10:30 AM" },
+    { id: 102, title: "Hydration", message: "Drink a glass of pure water now", time: "12:00 PM" }
+  ];
+
+  let activeGroup = null;
+
+  function logTelemetry(name, params = {}) {
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(11, 23);
+    const consoleEl = document.getElementById("logcat-stream");
+    if (consoleEl) {
+      const line = document.createElement("div");
+      line.className = "logcat-line";
+      const paramStr = Object.keys(params).length > 0 ? ` -> <span class="logcat-sec">${JSON.stringify(params)}</span>` : "";
+      line.innerHTML = `[${timestamp}] <span class="logcat-tag">VoiceAlarmTelemetry:</span> <strong>${name}</strong>${paramStr}`;
+      consoleEl.appendChild(line);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+  }
+
+  // Update clock
+  function startClock() {
+    setInterval(() => {
+      const date = new Date();
+      let h = date.getHours();
+      let m = date.getMinutes();
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      m = String(m).padStart(2, '0');
+      document.getElementById("live-clock").innerText = `${h}:${m} ${ampm}`;
+    }, 1000);
+  }
+
+  window.onload = function() {
+    startClock();
+    logTelemetry("application_initialized", {
+      db_encryption: "SQLCipher (AES-256-GCM)",
+      security_keys: "KMS_Keystore_Encrypted",
+      networking: "TLS_1.3_Strict"
+    });
+    renderPersonalAlarms();
+  };
+
+  // Biometrics Unlocks
+  function performUnlock() {
+    const instructionEl = document.getElementById("lock-instruction");
+    
+    if (biometricStyle === "faceid") {
+      instructionEl.innerText = "Scanning Face ID / Face scanner mapping...";
+      logTelemetry("biometric_auth_triggered", { protocol: "FaceID_iOS_LocalAuthentication" });
+    } else {
+      instructionEl.innerText = "Reading fingerprint coordinates...";
+      logTelemetry("biometric_auth_triggered", { protocol: "Fingerprint_Android_BiometricPrompt" });
+    }
+
+    setTimeout(() => {
+      document.getElementById("lock-screen").classList.remove("active");
+      biometricLockActive = false;
+      logTelemetry("biometric_auth_success", { local_token: "AES_KEY_WRAPPED_OK" });
+      speakTts("Welcome back to Voice Alarm");
+    }, 1000);
+  }
+
+  function toggleBioSecurity() {
+    biometricEnabled = !biometricEnabled;
+    const switchEl = document.getElementById("bio-switch");
+    if (biometricEnabled) {
+      switchEl.classList.add("active");
+      logTelemetry("biometric_security_enabled", { state: "ON" });
+    } else {
+      switchEl.classList.remove("active");
+      logTelemetry("biometric_security_disabled", { state: "OFF" });
+    }
+  }
+
+  function updateBioType() {
+    biometricStyle = document.getElementById("bio-type").value;
+    const iconEl = document.getElementById("bio-icon");
+    const instructionEl = document.getElementById("lock-instruction");
+    if (biometricStyle === "faceid") {
+      iconEl.innerText = "📱";
+      instructionEl.innerText = "Tap icon above to scan Face ID / Touch ID";
+    } else {
+      iconEl.innerText = "👆";
+      instructionEl.innerText = "Tap icon above to scan fingerprint";
+    }
+    logTelemetry("biometric_lock_type_updated", { type: biometricStyle });
+  }
+
+  function simulateSleep() {
+    toggleSettings(false);
+    if (biometricEnabled) {
+      document.getElementById("lock-screen").classList.add("active");
+      biometricLockActive = true;
+      document.getElementById("lock-instruction").innerText = biometricStyle === "faceid" ? "Tap icon above to scan Face ID" : "Tap icon above to scan fingerprint";
+      logTelemetry("app_entered_background", { message: "Security lock active on resume" });
+    } else {
+      logTelemetry("app_entered_background", { message: "Security lock bypassed (biometrics disabled)" });
+      alert("App simulated going to background. Since biometric lock is disabled in settings, it stays unlocked!");
+    }
+  }
+
+  // Settings Drawer Toggle
+  function toggleSettings(open) {
+    const drawer = document.getElementById("settings-drawer");
+    if (open) {
+      drawer.classList.add("active");
+      logTelemetry("settings_drawer_opened");
+    } else {
+      drawer.classList.remove("active");
+      logTelemetry("settings_drawer_closed");
+    }
+  }
+
+  function updateSpeechVal(type, val) {
+    const num = (parseFloat(val) / 10).toFixed(1);
+    if (type === "pitch") {
+      speechPitch = num;
+      document.getElementById("pitch-val").innerText = `${num}x`;
+      logTelemetry("speech_pitch_updated", { pitch: speechPitch });
+    } else {
+      speechSpeed = num;
+      document.getElementById("speed-val").innerText = `${num}x`;
+      logTelemetry("speech_speed_updated", { speed: speechSpeed });
+    }
+  }
+
+  // Personal Alarms rendering
+  function renderPersonalAlarms() {
+    const listEl = document.getElementById("personal-alarm-list");
+    listEl.innerHTML = "";
+    if (personalAlarms.length === 0) {
+      listEl.innerHTML = `<div style="text-align:center; padding:12px; font-size:11px; color:var(--text-muted);">No personal alarms active.</div>`;
+      return;
+    }
+    personalAlarms.forEach(alarm => {
+      const item = document.createElement("div");
+      item.className = "alarm-item";
+      item.innerHTML = `
+        <div class="alarm-info">
+          <div class="alarm-title-row">
+            <span class="alarm-title">${alarm.title}</span>
+          </div>
+          <span class="alarm-desc">${alarm.message}</span>
+          <span class="alarm-time-tag">⏰ Daily at ${alarm.time}</span>
+        </div>
+        <div class="switch active" onclick="toggleAlarmActive(this, ${alarm.id})"></div>
+      `;
+      listEl.appendChild(item);
+    });
+  }
+
+  function toggleAlarmActive(el, id) {
+    const isActive = el.classList.toggle("active");
+    logTelemetry("alarm_active_state_changed", { alarmId: id, active: isActive });
+  }
+
+  function addPersonalAlarm() {
+    const title = document.getElementById("p-title").value.trim();
+    const msg = document.getElementById("p-msg").value.trim();
+    const timeVal = document.getElementById("p-time").value;
+
+    if (!title || !timeVal) {
+      alert("Please enter title and time");
+      return;
+    }
+
+    let timeParts = timeVal.split(":");
+    let hours = parseInt(timeParts[0]);
+    let minutes = parseInt(timeParts[1]);
+    let ampm = hours >= 12 ? "PM" : "AM";
+    let dispHours = hours % 12 || 12;
+    let dispTime = `${dispHours}:${String(minutes).padStart(2,'0')} ${ampm}`;
+
+    const newAlarm = {
+      id: Date.now(),
+      title: title,
+      message: msg || "Alarm Alert!",
+      time: dispTime
+    };
+
+    personalAlarms.unshift(newAlarm);
+    logTelemetry("personal_alarm_saved_sqlite", {
+      db_transaction: "WRITE_SUCCESS",
+      payload: newAlarm
+    });
+    
+    renderPersonalAlarms();
+    
+    // Speak voice confirmation
+    speakTts(`Personal alarm scheduled: ${title} at ${dispTime}`);
+
+    document.getElementById("p-title").value = "";
+    document.getElementById("p-msg").value = "";
+  }
+
+  // Voice command assistant
+  function simulateVoiceInput() {
+    const text = document.getElementById("voice-txt").value.trim();
+    if (!text) {
+      alert("Please enter a spoken command like:\n'Wake me up at 6 AM' or 'Tell Mom to walk at 5 PM'");
+      return;
+    }
+
+    const waveform = document.getElementById("waveform");
+    waveform.style.display = "flex";
+    logTelemetry("speech_to_text_input", { raw_audio_captured: true });
+    
+    setTimeout(() => {
+      waveform.style.display = "none";
+      logTelemetry("voice_command_interpreted", { text: text });
+      parseSpeechCommand(text);
+    }, 1500);
+  }
+
+  function parseSpeechCommand(text) {
+    const clean = text.toLowerCase();
+    
+    // Check if it's personal
+    if (clean.includes("wake me") || clean.includes("remind me")) {
+      // Parse time
+      let timeMatch = clean.match(/(\d+)\s*(am|pm)/i);
+      let hour = 8;
+      let ampm = "AM";
+      if (timeMatch) {
+        hour = parseInt(timeMatch[1]);
+        ampm = timeMatch[2].toUpperCase();
+      }
+      let dispTime = `${hour}:00 ${ampm}`;
+      let title = "Voice alarm";
+      if (clean.includes("walk")) title = "Walk Alarm";
+      else if (clean.includes("water")) title = "Drink Water";
+      
+      const voiceAlarm = {
+        id: Date.now(),
+        title: title,
+        message: text,
+        time: dispTime
+      };
+
+      personalAlarms.unshift(voiceAlarm);
+      logTelemetry("voice_parsed_personal_alarm", { title: title, time: dispTime });
+      renderPersonalAlarms();
+      speakTts(`Created voice alarm: ${title} at ${dispTime}`);
+      alert(`🎤 Voice command recognized:\nPersonal alarm added: "${title}" at ${dispTime}`);
+    } 
+    // Check if it's family group remote alarm
+    else if (clean.includes("tell") || clean.includes("remind papa") || clean.includes("remind dad") || clean.includes("remind mom")) {
+      let recipient = "Papa";
+      if (clean.includes("mom")) recipient = "Mom";
+      
+      let timeMatch = clean.match(/(\d+)\s*(am|pm)/i);
+      let hour = 8;
+      let ampm = "PM";
+      if (timeMatch) {
+        hour = parseInt(timeMatch[1]);
+        ampm = timeMatch[2].toUpperCase();
+      }
+      let dispTime = `${hour}:00 ${ampm}`;
+      let msg = text;
+
+      if (!activeGroup) {
+        // Auto create mock group
+        activeGroup = {
+          name: "Parent Care Group",
+          memberName: recipient,
+          memberPhone: "+91 9988776655",
+          status: "ACCEPTED"
+        };
+        showActiveGroup();
+        logTelemetry("auto_group_created_via_voice", { group: activeGroup });
+      }
+
+      logTelemetry("voice_parsed_group_alarm", { recipient: recipient, message: msg, time: dispTime });
+      
+      speakTts(`Sending shared alarm to ${recipient} at ${dispTime}`);
+      
+      // Syncing remote
+      logTelemetry("remote_sync_via_fcm", { status: "SYNC_PENDING", recipient: recipient });
+      setTimeout(() => {
+        logTelemetry("remote_sync_completed", { status: "DELIVERED_TO_RECIPIENT_DEVICE" });
+        alert(`🛰️ Voice remote alarm sent to ${recipient} via FCM cloud push!\nTrigger time: ${dispTime}`);
+      }, 1200);
+    } else {
+      logTelemetry("voice_interpretation_failure", { error: "No matching pattern recognized" });
+      alert("Sorry, could not interpret. Try saying:\n'Wake me up at 7 AM' or 'Tell Papa to take medicine at 8 PM'");
+    }
+    
+    document.getElementById("voice-txt").value = "";
+  }
+
+  // Family Care hub
+  function createFamilyGroup() {
+    const name = document.getElementById("g-name").value.trim();
+    const gmName = document.getElementById("gm-name").value.trim();
+    const gmPhone = document.getElementById("gm-phone").value.trim();
+
+    if (!name || !gmName || !gmPhone) {
+      alert("Please fill in group name, nickname, and phone");
+      return;
+    }
+
+    activeGroup = {
+      name: name,
+      memberName: gmName,
+      memberPhone: gmPhone,
+      status: "PENDING"
+    };
+
+    showActiveGroup();
+    logTelemetry("family_group_created_local", { groupName: name });
+    logTelemetry("dispatch_network_sms_invite", { phone: gmPhone, token: "JWT_SECURED_INVITE" });
+
+    speakTts(`Group created. Care invitation sent to ${gmName}`);
+
+    // Auto accept after 3s to simulate remote consent
+    setTimeout(() => {
+      activeGroup.status = "ACCEPTED";
+      document.getElementById("lbl-invite-status").innerText = "ACCEPTED";
+      document.getElementById("lbl-invite-status").style.color = "var(--success)";
+      logTelemetry("recipient_consent_accepted", { phone: gmPhone, consent: "APPROVED" });
+      speakTts(`${gmName} accepted your invitation.`);
+    }, 4000);
+  }
+
+  function showActiveGroup() {
+    document.getElementById("group-creation-box").style.display = "none";
+    document.getElementById("group-active-box").style.display = "flex";
+    document.getElementById("lbl-group-name").innerText = `Active Group: ${activeGroup.name}`;
+    document.getElementById("lbl-member-info").innerText = `${activeGroup.memberName} (${activeGroup.memberPhone})`;
+    document.getElementById("lbl-invite-status").innerText = activeGroup.status;
+    document.getElementById("lbl-invite-status").style.color = activeGroup.status === "ACCEPTED" ? "var(--success)" : "var(--amber)";
+  }
+
+  function sendSharedGroupAlarm() {
+    const msg = document.getElementById("g-alarm-msg").value.trim();
+    const timeVal = document.getElementById("g-alarm-time").value;
+
+    if (!msg || !timeVal) {
+      alert("Please enter message and time");
+      return;
+    }
+
+    let timeParts = timeVal.split(":");
+    let hours = parseInt(timeParts[0]);
+    let minutes = parseInt(timeParts[1]);
+    let ampm = hours >= 12 ? "PM" : "AM";
+    let dispHours = hours % 12 || 12;
+    let dispTime = `${dispHours}:${String(minutes).padStart(2,'0')} ${ampm}`;
+
+    logTelemetry("group_alarm_scheduled_locally", {
+      sync: "PENDING_PUSH",
+      recipient: activeGroup.memberName,
+      time: dispTime
+    });
+
+    // Speak confirmation
+    speakTts(`Dispatching care reminder to ${activeGroup.memberName}`);
+
+    // FCM sync
+    setTimeout(() => {
+      logTelemetry("fcm_sync_success_handshake", {
+        recipient_device_ack: true,
+        encrypted_db_payload: "AES_256_PAYLOAD"
+      });
+      alert(`🛰️ Shared alarm dispatched successfully to ${activeGroup.memberName} at ${dispTime}!`);
+    }, 1500);
+
+    document.getElementById("g-alarm-msg").value = "";
+  }
+
+  // Backup & SQLCipher functions
+  function mockExportBackup() {
+    const dbDump = {
+      user: "local_user",
+      personalAlarms: personalAlarms,
+      group: activeGroup,
+      security: {
+        biometrics: biometricEnabled,
+        biometricStyle: biometricStyle
+      }
+    };
+    const encryptedDump = btoa(JSON.stringify(dbDump)); // Mock encryption
+    logTelemetry("sqlcipher_database_export_triggered", { bytes: encryptedDump.length });
+    
+    // Simulate file download
+    const blob = new Blob([encryptedDump], {type: "text/plain"});
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "echocare_secure_sqlcipher.backup";
+    link.click();
+    
+    logTelemetry("sqlcipher_database_export_success", { path: "/storage/emulated/0/EchoCare/backups/" });
+  }
+
+  function mockImportBackup() {
+    logTelemetry("sqlcipher_database_import_triggered");
+    const input = document.createElement("input");
+    input.type = "file";
+    input.onchange = e => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function() {
+        try {
+          const decrypted = JSON.parse(atob(reader.result));
+          if (decrypted.personalAlarms) {
+            personalAlarms = decrypted.personalAlarms;
+            activeGroup = decrypted.group;
+            biometricEnabled = decrypted.security.biometrics;
+            biometricStyle = decrypted.security.biometricStyle;
+
+            renderPersonalAlarms();
+            if (activeGroup) showActiveGroup();
+            
+            logTelemetry("sqlcipher_database_import_success", { status: "RESTORED_OK" });
+            alert("🔒 SQLCipher Backup Restored Successfully!");
+          }
+        } catch (err) {
+          logTelemetry("sqlcipher_decryption_failure", { error: "Invalid cryptographic key or checksum mismatch" });
+          alert("❌ Failed to restore: Decryption Key Error or Corrupt Backup file.");
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
+  function clearTelemetry() {
+    document.getElementById("logcat-stream").innerHTML = "";
+  }
+
+  function speakTts(text) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.pitch = speechPitch;
+      utterance.rate = speechSpeed;
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+</script>
+</body>
+</html>

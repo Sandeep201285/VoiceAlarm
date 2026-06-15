@@ -1,0 +1,14 @@
+<resources>
+    <!-- Needed for the splash screen API -->
+    <style name="Theme.EchoCare" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="Theme.EchoCare.SplashScreen" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#0A0B18</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_alarm</item>
+        <item name="postSplashScreenTheme">@style/Theme.EchoCare</item>
+    </style>
+</resources>

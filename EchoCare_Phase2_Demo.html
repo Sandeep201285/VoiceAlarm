@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EchoCare – Phase 2 Interactive Demo</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --bg:         #0A0B18;
+    --surface:    #12142B;
+    --surfvar:    #1C1F3D;
+    --card:       #1A1D38;
+    --outline:    #3A3D5C;
+    --primary:    #8B5CF6;
+    --primary-c:  #4C1D95;
+    --on-primary: #FFFFFF;
+    --secondary:  #22D3EE;
+    --amber:      #F59E0B;
+    --error:      #EF4444;
+    --text:       #E8E9FF;
+    --text2:      #8B8FA8;
+    --radius:     20px;
+    --transition: 0.3s cubic-bezier(.4,0,.2,1);
+  }
+
+  body {
+    background: #050610;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 24px 16px 40px;
+    font-family: 'Outfit', -apple-system, sans-serif;
+    color: var(--text);
+  }
+
+  /* ── Page header ─────────────────────────────────────────────────── */
+  .page-header {
+    width: 100%;
+    max-width: 440px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .page-header h1 { font-size: 24px; color: var(--primary); font-weight: 800; letter-spacing: .5px; }
+  .page-header p  { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+  /* ── Phone frame ─────────────────────────────────────────────────── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: var(--bg);
+    border-radius: 44px;
+    border: 2px solid var(--outline);
+    box-shadow: 0 0 0 6px #0d0e22, 0 40px 80px rgba(0,0,0,.7), 0 0 120px rgba(139,92,246,.15);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px 4px;
+    font-size: 12px; font-weight: 600; color: var(--text2);
+    flex-shrink: 0;
+  }
+
+  /* Screen container */
+  .screens { flex: 1; overflow: hidden; position: relative; }
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    overflow-y: auto; overflow-x: hidden;
+    opacity: 0; pointer-events: none;
+    transform: translateX(30px);
+    transition: opacity var(--transition), transform var(--transition);
+    scrollbar-width: none;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen.active {
+    opacity: 1; pointer-events: all; transform: translateX(0);
+  }
+  .screen.slide-back { transform: translateX(-30px); }
+
+  /* ── Bottom nav ──────────────────────────────────────────────────── */
+  .bottom-nav {
+    display: flex; border-top: 1px solid var(--outline);
+    background: var(--surface); flex-shrink: 0;
+    padding-bottom: 12px;
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 12px 0 6px; gap: 4px; cursor: pointer;
+    font-size: 10px; color: var(--text2);
+    transition: color var(--transition);
+  }
+  .nav-item.active { color: var(--primary); }
+  .nav-item svg { width: 22px; height: 22px; }
+
+  /* ── Reusable components ─────────────────────────────────────────── */
+  .topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 20px 8px; flex-shrink: 0;
+  }
+  .topbar-title { font-size: 22px; font-weight: 800; flex: 1; }
+  .topbar-sub   { font-size: 12px; color: var(--text2); }
+  .icon-btn {
+    width: 38px; height: 38px; border-radius: 50%; background: var(--surfvar);
+    border: none; cursor: pointer; color: var(--text); display: flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+    transition: background var(--transition);
+  }
+  .icon-btn:hover { background: var(--outline); }
+  .icon-btn svg { width: 20px; height: 20px; }
+
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    border: 1px solid rgba(255,255,255,.07);
+    padding: 16px; margin: 0 16px;
+  }
+  .card + .card { margin-top: 10px; }
+
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 0 20px; height: 52px; border-radius: 16px; border: none;
+    cursor: pointer; font-size: 15px; font-weight: 700;
+    transition: transform .15s, box-shadow .15s, opacity .15s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    background: var(--primary); color: #fff;
+    box-shadow: 0 6px 24px rgba(139,92,246,.4);
+  }
+  .btn-outline {
+    background: transparent; color: var(--primary);
+    border: 1.5px solid var(--primary);
+  }
+  .btn-danger {
+    background: rgba(239,68,68,.15); color: #fca5a5;
+    border: 1px solid rgba(239,68,68,.3);
+  }
+  .btn:disabled { opacity: .5; pointer-events: none; }
+
+  .input-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .input-label { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+  .input {
+    background: var(--surfvar); border: 1.5px solid var(--outline);
+    border-radius: 14px; padding: 12px 14px; color: var(--text);
+    font-size: 15px; outline: none; width: 100%;
+    transition: border-color var(--transition);
+    font-family: inherit;
+  }
+  .input:focus { border-color: var(--primary); }
+  .input::placeholder { color: var(--text2); opacity: 0.5; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 700;
+    background: rgba(139,92,246,.2); color: var(--primary);
+  }
+  .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    padding: 6px 14px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    border: 1.5px solid var(--outline); background: transparent;
+    color: var(--text2); cursor: pointer; transition: all .2s;
+  }
+  .chip.active {
+    background: rgba(139,92,246,.2); border-color: var(--primary); color: var(--primary);
+  }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SCREEN: ONBOARDING
+  ───────────────────────────────────────────────────────────────── */
+  #auth {
+    background: radial-gradient(ellipse at 50% -20%, rgba(139,92,246,.3) 0%, transparent 70%), var(--bg);
+  }
+  .auth-inner {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px 28px; gap: 24px;
+  }
+  .auth-logo {
+    width: 96px; height: 96px; border-radius: 28px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-c));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px; box-shadow: 0 16px 40px rgba(139,92,246,.5);
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+  .auth-title  { font-size: 28px; font-weight: 800; text-align: center; }
+  .auth-sub    { font-size: 14px; color: var(--text2); text-align: center; line-height: 1.7; }
+  .auth-foot   { font-size: 11px; color: var(--text2); text-align: center; opacity: .7; }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SCREEN: HOME & FAB
+  ───────────────────────────────────────────────────────────────── */
+  .stats-banner {
+    margin: 8px 16px 0; border-radius: 20px;
+    background: linear-gradient(135deg, var(--primary-c), #1a3a5c);
+    padding: 20px; display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .stats-num  { font-size: 48px; font-weight: 900; line-height: 1; color: #fff; }
+  .stats-lbl  { font-size: 13px; color: rgba(255,255,255,.75); margin-top: 2px; }
+  .stats-icon { font-size: 52px; }
+
+  .section-hdr {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 16px 6px; font-size: 15px; font-weight: 700;
+  }
+  .section-count {
+    background: rgba(139,92,246,.25); color: var(--primary);
+    border-radius: 99px; padding: 1px 8px; font-size: 11px; font-weight: 700;
+  }
+
+  .rem-card {
+    margin: 0 16px 10px;
+    background: var(--card); border-radius: 18px;
+    border: 1px solid rgba(255,255,255,.07);
+    display: flex; overflow: hidden;
+    animation: slideIn .3s ease;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(10px); } }
+  .rem-accent { width: 4px; background: var(--primary); flex-shrink: 0; }
+  .rem-accent.inactive { background: var(--outline); }
+  .rem-body { flex: 1; padding: 14px 10px 14px 14px; }
+  .rem-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .rem-msg   { font-size: 12px; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+  .rem-time  { font-size: 12px; color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 4px; }
+  
+  .rem-actions { display: flex; flex-direction: column; align-items: center; padding: 8px 6px 8px 0; gap: 4px; }
+  .toggle {
+    width: 36px; height: 20px; border-radius: 99px; position: relative;
+    cursor: pointer; transition: background .2s; border: none; flex-shrink: 0;
+  }
+  .toggle.on  { background: var(--primary); }
+  .toggle.off { background: var(--outline); }
+  .toggle::after {
+    content: ''; position: absolute; width: 14px; height: 14px;
+    border-radius: 50%; background: #fff; top: 3px;
+    transition: left .2s;
+  }
+  .toggle.on::after  { left: 19px; }
+  .toggle.off::after { left: 3px; }
+  .rem-act-btn {
+    width: 30px; height: 30px; border-radius: 8px; background: transparent;
+    border: none; cursor: pointer; color: var(--text2);
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s;
+  }
+  .rem-act-btn:hover { background: var(--surfvar); }
+  .rem-act-btn.del   { color: var(--error); }
+  .rem-act-btn svg   { width: 16px; height: 16px; }
+
+  /* Double FAB Row */
+  .fab-container {
+    position: absolute; bottom: 20px; right: 20px;
+    display: flex; align-items: center; gap: 12px; z-index: 10;
+  }
+  .fab-secondary {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: var(--surfvar); border: 1px solid var(--outline);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,.3); transition: transform .2s;
+  }
+  .fab-secondary:hover { transform: scale(1.05); }
+  .fab-secondary svg { width: 22px; height: 22px; color: var(--text); }
+
+  .fab-primary {
+    width: 64px; height: 64px; border-radius: 18px;
+    background: var(--primary); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 24px rgba(139,92,246,.5);
+    transition: transform .2s, box-shadow .2s;
+  }
+  .fab-primary:hover { transform: scale(1.08); box-shadow: 0 12px 32px rgba(139,92,246,.6); }
+  .fab-primary svg { width: 28px; height: 28px; color: #fff; }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SCREEN: VOICE INPUT OVERLAY
+  ───────────────────────────────────────────────────────────────── */
+  .voice-overlay {
+    position: absolute; inset: 0; background: rgba(5,6,16,0.92);
+    z-index: 100; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; padding: 24px;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+  }
+  .voice-overlay.active { opacity: 1; pointer-events: all; }
+
+  .voice-headline { font-size: 26px; font-weight: 800; color: var(--primary); margin-bottom: 8px; text-align: center; }
+  .voice-sub      { font-size: 13px; color: var(--text2); margin-bottom: 30px; text-align: center; }
+
+  /* Visualizer Bars */
+  .visualizer-container {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    height: 60px; margin-bottom: 30px; width: 100%;
+  }
+  .visualizer-bar {
+    width: 5px; height: 10px; border-radius: 99px;
+    background: var(--secondary);
+    transition: height 0.08s ease;
+  }
+
+  .transcript-card {
+    background: rgba(28,31,61,0.5); border: 1.5px solid var(--outline);
+    border-radius: var(--radius); padding: 20px; width: 100%;
+    min-height: 120px; display: flex; align-items: center; justify-content: center;
+    text-align: center; margin-bottom: 30px;
+  }
+  .transcript-text { font-size: 16px; line-height: 1.6; color: var(--text); }
+  .transcript-placeholder { font-size: 15px; color: var(--text2); opacity: 0.6; font-style: italic; }
+
+  .lang-toggle {
+    margin-bottom: 30px; display: flex; gap: 8px;
+  }
+
+  /* Keyboard simulator for testing when mic fails or isn't wanted */
+  .voice-sim-box {
+    background: var(--surface); border: 1px solid var(--outline);
+    border-radius: 16px; padding: 12px; width: 100%; margin-bottom: 30px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .voice-sim-title { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; text-align: center; }
+  .voice-sim-grid { display: grid; grid-template-columns: 1fr; gap: 6px; }
+  .voice-sim-btn {
+    background: var(--surfvar); border: none; padding: 8px; border-radius: 10px;
+    color: var(--text); font-size: 12px; cursor: pointer; text-align: left;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    transition: background 0.15s;
+  }
+  .voice-sim-btn:hover { background: var(--outline); }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SCREEN: CONFIRMATION SCREEN
+  ───────────────────────────────────────────────────────────────── */
+  #confirm-screen {
+    background: radial-gradient(ellipse at 50% -20%, rgba(139,92,246,.25) 0%, transparent 70%), var(--bg);
+  }
+  .confirm-body { padding: 12px 16px 120px; display: flex; flex-direction: column; gap: 18px; }
+
+  .parsed-card {
+    background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(34,211,238,0.05));
+    border: 1.5px solid var(--primary);
+  }
+  .recipient-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(34,211,238,.2); color: var(--secondary);
+    padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 700;
+  }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SCREEN: ADD MANUALLY (PHASE 1 FALLBACK)
+  ───────────────────────────────────────────────────────────────── */
+  .form-body { padding: 8px 16px 100px; display: flex; flex-direction: column; gap: 18px; }
+  .form-section-label {
+    font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: .8px;
+  }
+  .recurrence-option {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: 14px;
+    background: var(--surfvar); cursor: pointer; border: 1.5px solid transparent;
+    transition: all .2s;
+  }
+  .recurrence-option.selected { border-color: var(--primary); background: rgba(139,92,246,0.15); }
+  .recurrence-option .radio {
+    width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--outline);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .recurrence-option.selected .radio { border-color: var(--primary); }
+  .recurrence-option.selected .radio::after {
+    content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--primary);
+  }
+  .recurrence-label { font-size: 14px; font-weight: 600; }
+
+  .datetime-row { display: flex; gap: 10px; }
+  .datetime-chip {
+    flex: 1; padding: 12px; border-radius: 14px;
+    background: rgba(139,92,246,.15); border: 1.5px solid rgba(139,92,246,.3);
+    text-align: center; cursor: pointer; font-size: 13px; font-weight: 600;
+    color: var(--primary); transition: background .2s;
+  }
+  .datetime-chip:hover { background: rgba(139,92,246,.25); }
+
+  .slider-row  { display: flex; gap: 16px; }
+  .slider-item { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .slider-lbl  { font-size: 12px; color: var(--text2); }
+  input[type=range] {
+    -webkit-appearance: none; width: 100%; height: 4px;
+    border-radius: 99px; background: var(--outline); outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--primary); cursor: pointer;
+    box-shadow: 0 2px 8px rgba(139,92,246,.5);
+  }
+
+  .save-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 12px 16px 20px; background: linear-gradient(transparent, var(--bg) 30%);
+    display: flex; gap: 10px;
+  }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SCREEN: ALARM TRIGGER
+  ───────────────────────────────────────────────────────────────── */
+  #alarm {
+    background: radial-gradient(ellipse at 50% 30%, rgba(139,92,246,.35) 0%, transparent 70%), var(--bg);
+    align-items: center; justify-content: center;
+  }
+  .alarm-inner {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 24px; padding: 40px 28px; width: 100%;
+  }
+  .clock-display {
+    display: flex; align-items: flex-end; gap: 8px;
+  }
+  .clock-time { font-size: 72px; font-weight: 900; letter-spacing: -2px; }
+  .clock-ampm { font-size: 22px; color: var(--primary); font-weight: 700; padding-bottom: 12px; }
+
+  .alarm-bell {
+    width: 100px; height: 100px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--primary-c));
+    display: flex; align-items: center; justify-content: center; font-size: 52px;
+    box-shadow: 0 0 0 0 rgba(139,92,246,.6);
+    animation: pulse-ring 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%   { box-shadow: 0 0 0 0 rgba(139,92,246,.6); transform: scale(1); }
+    50%  { box-shadow: 0 0 0 20px rgba(139,92,246,0); transform: scale(1.1); }
+    100% { box-shadow: 0 0 0 0 rgba(139,92,246,0); transform: scale(1); }
+  }
+
+  .alarm-card {
+    background: rgba(255,255,255,.07); backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,.12); border-radius: 20px;
+    padding: 24px; width: 100%; text-align: center;
+  }
+  .alarm-title   { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+  .alarm-message { font-size: 15px; color: var(--text2); line-height: 1.6; }
+  .alarm-btns { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+
+  .tts-wave {
+    display: flex; align-items: center; gap: 3px; height: 24px;
+  }
+  .tts-wave span {
+    display: block; width: 3px; border-radius: 99px; background: var(--secondary);
+    animation: wave 1s ease-in-out infinite;
+  }
+  .tts-wave span:nth-child(1) { height: 8px;  animation-delay: 0s; }
+  .tts-wave span:nth-child(2) { height: 18px; animation-delay: .1s; }
+  .tts-wave span:nth-child(3) { height: 12px; animation-delay: .2s; }
+  .tts-wave span:nth-child(4) { height: 20px; animation-delay: .3s; }
+  .tts-wave span:nth-child(5) { height: 10px; animation-delay: .4s; }
+  @keyframes wave {
+    0%,100% { transform: scaleY(.4); }
+    50%      { transform: scaleY(1); }
+  }
+  .tts-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--secondary); font-weight: 600;
+    justify-content: center; margin-top: -10px;
+  }
+
+  /* ─────────────────────────────────────────────────────────────────
+     SCREEN: SETTINGS
+  ───────────────────────────────────────────────────────────────── */
+  .settings-body { padding: 4px 16px 40px; display: flex; flex-direction: column; gap: 20px; }
+  .settings-section {
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .settings-box {
+    background: rgba(255,255,255,.04); border: 1px solid var(--outline);
+    border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .settings-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .settings-row-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .settings-row-label { font-size: 14px; font-weight: 600; }
+  .settings-row-sub   { font-size: 12px; color: var(--text2); }
+  .switch {
+    width: 44px; height: 24px; border-radius: 99px; position: relative;
+    cursor: pointer; border: none; transition: background .2s; flex-shrink: 0;
+  }
+  .switch.on  { background: var(--primary); }
+  .switch.off { background: var(--outline); }
+  .switch::after {
+    content: ''; position: absolute; width: 18px; height: 18px;
+    border-radius: 50%; background: #fff; top: 3px; transition: left .2s;
+  }
+  .switch.on::after  { left: 23px; }
+  .switch.off::after { left: 3px; }
+  .about-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px;
+  }
+  .about-row span:first-child { color: var(--text2); }
+  .about-row span:last-child  { font-weight: 600; }
+  .hr { border: none; border-top: 1px solid var(--outline); }
+
+  /* ─────────────────────────────────────────────────────────────────
+     TOAST & RESPONSIVE
+  ───────────────────────────────────────────────────────────────── */
+  .toast {
+    position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--surfvar); border: 1px solid var(--outline);
+    border-radius: 12px; padding: 12px 20px; font-size: 13px; font-weight: 600;
+    pointer-events: none; transition: transform .3s, opacity .3s; opacity: 0; z-index: 9999;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  @media (max-width: 430px) {
+    .phone { width: 100vw; height: 100svh; border-radius: 0; border: none; box-shadow: none; }
+    body { padding: 0; }
+    .page-header { display: none; }
+  }
+
+  .demo-bar {
+    width: 390px; display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  }
+  .demo-bar-label { font-size: 12px; color: var(--text2); flex: 1; }
+  .demo-btn {
+    padding: 6px 14px; border-radius: 8px; border: 1.5px solid var(--primary);
+    background: transparent; color: var(--primary); font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: background .2s;
+  }
+  .demo-btn:hover { background: rgba(139,92,246,.15); }
+  @media (max-width: 430px) { .demo-bar { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- ── Page Header ───────────────────────────────────────────────── -->
+<div class="page-header">
+  <h1>🎙️ EchoCare — Phase 2 Interactive Demo</h1>
+  <p>Speak naturally (English/Hindi) · Web Speech Recognition & Intent NLP</p>
+</div>
+
+<!-- ── Demo Controls ─────────────────────────────────────────────── -->
+<div class="demo-bar">
+  <span class="demo-bar-label">📱 Try speaking reminders via mic!</span>
+  <button class="demo-btn" onclick="triggerAlarmDemo()">🔔 Fire Test Alarm</button>
+  <button class="demo-btn" onclick="resetApp()">↺ Reset</button>
+</div>
+
+<!-- ── Phone Frame ───────────────────────────────────────────────── -->
+<div class="phone">
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span id="status-time">9:41</span>
+    <span>📶 EchoCare Demo</span>
+    <span>🔋 87%</span>
+  </div>
+
+  <!-- ── SCREENS ──────────────────────────────────────────────── -->
+  <div class="screens" id="screens">
+
+    <!-- SCREEN 1: AUTH / ONBOARDING -->
+    <div class="screen active" id="auth">
+      <div class="auth-inner">
+        <div class="auth-logo">🔔</div>
+        <div>
+          <div class="auth-title">Welcome to EchoCare</div>
+        </div>
+        <div class="auth-sub">Speak once.<br>The right person hears the right reminder<br>at the right time.</div>
+
+        <div class="input-wrap" style="width:100%">
+          <label class="input-label">Your name</label>
+          <input class="input" id="auth-name" type="text" placeholder="e.g. Sandeep" autocomplete="off" />
+        </div>
+
+        <button class="btn btn-primary" style="width:100%" onclick="completeOnboarding()">
+          Get Started →
+        </button>
+        <div class="auth-foot">No account needed · Data stays on your device</div>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: HOME -->
+    <div class="screen" id="home">
+      <div class="topbar">
+        <div style="flex:1">
+          <div class="topbar-title" id="home-greeting">Good morning! 👋</div>
+          <div class="topbar-sub" id="home-date"></div>
+        </div>
+        <button class="icon-btn" onclick="goTo('settings')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Stats banner -->
+      <div class="stats-banner">
+        <div>
+          <div class="stats-num" id="stats-count">0</div>
+          <div class="stats-lbl">Active Reminders</div>
+        </div>
+        <div class="stats-icon">🔔</div>
+      </div>
+
+      <!-- Reminder list -->
+      <div class="section-hdr">
+        <span>⏰</span> Upcoming
+        <span class="section-count" id="upcoming-count">0</span>
+      </div>
+      <div id="reminder-list">
+        <div class="empty-state">
+          <div class="emoji">💤</div>
+          <p>No upcoming reminders.<br>Tap Mic to speak a reminder!</p>
+        </div>
+      </div>
+
+      <!-- Dual FABs -->
+      <div class="fab-container">
+        <button class="fab-secondary" onclick="goTo('add')" title="Manual Add">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+          </svg>
+        </button>
+        <button class="fab-primary" onclick="openVoiceOverlay()" title="Voice Input">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- VOICE OVERLAY POPUP -->
+    <div class="voice-overlay" id="voice-overlay">
+      <div class="voice-headline" id="voice-status">Listening...</div>
+      <div class="voice-sub" id="voice-sub">Speak your reminder in English or Hindi</div>
+
+      <!-- Waveform Visualizer -->
+      <div class="visualizer-container" id="visualizer">
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+        <div class="visualizer-bar"></div>
+      </div>
+
+      <!-- Transcript display -->
+      <div class="transcript-card">
+        <span class="transcript-text" id="transcript-txt">
+          <span class="transcript-placeholder">Start speaking now...</span>
+        </span>
+      </div>
+
+      <!-- Language selection toggle -->
+      <div class="lang-toggle">
+        <button class="chip active" id="voice-chip-en" onclick="setVoiceLang('en')">🇬🇧 English</button>
+        <button class="chip"        id="voice-chip-hi" onclick="setVoiceLang('hi')">🇮🇳 Hindi</button>
+      </div>
+
+      <!-- Keyboard simulator to type text if voice recognition fails/not supported -->
+      <div class="voice-sim-box">
+        <div class="voice-sim-title">💡 Mock Speech Options (Click to simulate)</div>
+        <div class="voice-sim-grid">
+          <button class="voice-sim-btn" onclick="simulateVoice('Wake me up at 5:30 AM tomorrow')">"Wake me up at 5:30 AM tomorrow"</button>
+          <button class="voice-sim-btn" onclick="simulateVoice('Remind me every 2 hours to drink water')">"Remind me every 2 hours to drink water"</button>
+          <button class="voice-sim-btn" onclick="simulateVoice('Tell Papa to take medicine at 8 PM every day')">"Tell Papa to take medicine at 8 PM every day"</button>
+          <button class="voice-sim-btn" onclick="simulateVoice('मुझे कल सुबह 6 बजे उठाओ')">"मुझे कल सुबह 6 बजे उठाओ"</button>
+          <button class="voice-sim-btn" onclick="simulateVoice('पापा को रोज़ रात 8 बजे बीपी की दवाई लेने के लिए कहो')">"पापा को रोज़ रात 8 बजे बीपी की दवाई लेने के लिए कहो"</button>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:16px;">
+        <button class="btn btn-outline" style="height:44px" onclick="closeVoiceOverlay()">Cancel</button>
+        <button class="btn btn-primary" style="height:44px" onclick="stopVoiceRecognition()">Done</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: CONFIRMATION SCREEN -->
+    <div class="screen" id="confirm-screen">
+      <div class="topbar">
+        <button class="icon-btn" onclick="goTo('home')">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <div class="topbar-title">Confirm Reminder</div>
+      </div>
+
+      <div class="confirm-body">
+        <div class="card parsed-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+            <span class="badge">🤖 Auto Parsed</span>
+            <span class="recipient-tag" id="conf-recipient">👤 Self</span>
+          </div>
+          <p style="font-size:12px; color:var(--text2)">Speech matched rules and calculated alarm parameters.</p>
+        </div>
+
+        <div class="input-wrap">
+          <label class="input-label">Title</label>
+          <input class="input" id="conf-title" type="text" />
+        </div>
+
+        <div class="input-wrap">
+          <label class="input-label">Spoken Message</label>
+          <textarea class="input" id="conf-message" rows="3"></textarea>
+        </div>
+
+        <div class="form-section-label">When</div>
+        <div class="datetime-row">
+          <div class="datetime-chip" onclick="document.getElementById('conf-date').click()">
+            📅 <span id="conf-date-display">Today</span>
+          </div>
+          <div class="datetime-chip" onclick="document.getElementById('conf-time').click()">
+            🕐 <span id="conf-time-display">12:00 PM</span>
+          </div>
+        </div>
+        <input type="date" id="conf-date" style="display:none" oninput="updateConfDateDisplay()" />
+        <input type="time" id="conf-time" style="display:none" oninput="updateConfTimeDisplay()" />
+
+        <div class="form-section-label">Repeat Schedule</div>
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <div class="recurrence-option" id="conf-rec-once"    data-r="ONCE"    onclick="selectConfRec(this)"><div class="radio"></div><span class="recurrence-label">1️⃣ One-time</span></div>
+          <div class="recurrence-option" id="conf-rec-daily"   data-r="DAILY"   onclick="selectConfRec(this)"><div class="radio"></div><span class="recurrence-label">🔄 Daily</span></div>
+          <div class="recurrence-option" id="conf-rec-weekly"  data-r="WEEKLY"  onclick="selectConfRec(this)"><div class="radio"></div><span class="recurrence-label">📅 Weekly</span></div>
+          <div class="recurrence-option" id="conf-rec-monthly" data-r="MONTHLY" onclick="selectConfRec(this)"><div class="radio"></div><span class="recurrence-label">🗓️ Monthly</span></div>
+          <div class="recurrence-option" id="conf-rec-custom"  data-r="CUSTOM"  onclick="selectConfRec(this)"><div class="radio"></div><span class="recurrence-label">⚙️ Custom Interval</span></div>
+        </div>
+
+        <div id="conf-custom-slider-wrap" style="display:none; flex-direction:column; gap:6px;">
+          <div style="font-size:12px; color:var(--text2)">Repeat Interval: <strong id="conf-custom-val">2</strong> hours</div>
+          <input type="range" id="conf-custom-slider" min="1" max="24" value="2"
+            oninput="document.getElementById('conf-custom-val').textContent=this.value" />
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <button class="btn btn-outline" style="width:40%" onclick="openVoiceOverlay()">🎙️ Respeak</button>
+        <button class="btn btn-primary" style="width:60%" onclick="saveConfReminder()">🔔 Confirm</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 4: ADD REMINDER (MANUAL FALLBACK) -->
+    <div class="screen" id="add">
+      <div class="topbar">
+        <button class="icon-btn" onclick="goBack()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <div class="topbar-title" id="add-title">New Reminder</div>
+      </div>
+
+      <div class="form-body">
+        <div id="form-error" style="display:none; background:rgba(239,68,68,.15); border:1px solid rgba(239,68,68,.3); border-radius:12px; padding:12px; font-size:13px; color:#fca5a5;"></div>
+
+        <div class="form-section-label">Reminder Details</div>
+        <div class="input-wrap">
+          <label class="input-label">Title</label>
+          <input class="input" id="rem-title" type="text" placeholder="e.g. Morning Medicine" />
+        </div>
+
+        <div class="input-wrap">
+          <label class="input-label">Spoken Message</label>
+          <textarea class="input" id="rem-message" rows="3" placeholder="e.g. Time to take your blood pressure medication"></textarea>
+        </div>
+
+        <div class="form-section-label">When</div>
+        <div class="datetime-row">
+          <div class="datetime-chip" onclick="document.getElementById('rem-date').click()">
+            📅 <span id="date-display">Today</span>
+          </div>
+          <div class="datetime-chip" onclick="document.getElementById('rem-time').click()">
+            🕐 <span id="time-display">Now +2 min</span>
+          </div>
+        </div>
+        <input type="date" id="rem-date" style="display:none" oninput="updateDateDisplay()" />
+        <input type="time" id="rem-time" style="display:none" oninput="updateTimeDisplay()" />
+
+        <div class="form-section-label">Repeat Schedule</div>
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <div class="recurrence-option selected" data-r="ONCE"    onclick="selectRecurrence(this)"><div class="radio"></div><span class="recurrence-label">1️⃣ One-time</span></div>
+          <div class="recurrence-option"          data-r="DAILY"   onclick="selectRecurrence(this)"><div class="radio"></div><span class="recurrence-label">🔄 Daily</span></div>
+          <div class="recurrence-option"          data-r="WEEKLY"  onclick="selectRecurrence(this)"><div class="radio"></div><span class="recurrence-label">📅 Weekly</span></div>
+          <div class="recurrence-option"          data-r="MONTHLY" onclick="selectRecurrence(this)"><div class="radio"></div><span class="recurrence-label">🗓️ Monthly</span></div>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <button class="btn btn-primary" style="width:100%" id="save-btn" onclick="saveReminder()">
+          🔔 Set Reminder
+        </button>
+      </div>
+    </div>
+
+    <!-- SCREEN 5: ALARM TRIGGER -->
+    <div class="screen" id="alarm">
+      <div class="alarm-inner">
+        <div class="clock-display">
+          <div class="clock-time" id="alarm-clock">9:41</div>
+          <div class="clock-ampm" id="alarm-ampm">AM</div>
+        </div>
+        <div class="alarm-bell">🔔</div>
+        <div class="tts-row" id="tts-indicator">
+          <div class="tts-wave"><span></span><span></span><span></span><span></span><span></span></div>
+          Speaking reminder…
+        </div>
+        <div class="alarm-card">
+          <div class="alarm-title" id="alarm-title">Morning Medicine</div>
+          <div class="alarm-message" id="alarm-message">Time to take your blood pressure medication</div>
+        </div>
+        <div class="alarm-btns">
+          <button class="btn btn-primary" style="width:100%" onclick="acknowledgeAlarm()">✅ Acknowledge</button>
+          <button class="btn btn-outline" style="width:100%" onclick="snoozeAlarm()">😴 Snooze 5 min</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREEN 6: SETTINGS -->
+    <div class="screen" id="settings">
+      <div class="topbar">
+        <button class="icon-btn" onclick="goBack()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <div class="topbar-title">Settings</div>
+      </div>
+
+      <div class="settings-body">
+        <div class="settings-section">
+          <div class="form-section-label">Profile</div>
+          <div class="settings-box">
+            <div class="input-wrap">
+              <label class="input-label">Your name</label>
+              <input class="input" id="settings-name" type="text" oninput="saveSetting('userName', this.value)" />
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="form-section-label">Voice & Language</div>
+          <div class="settings-box">
+            <div>
+              <div class="input-label" style="margin-bottom:8px">Default TTS Language</div>
+              <div class="chip-row">
+                <div class="chip active" id="chip-en" onclick="setLang('en')">🇬🇧 English</div>
+                <div class="chip"        id="chip-hi" onclick="setLang('hi')">🇮🇳 Hindi</div>
+              </div>
+            </div>
+            <hr class="hr" />
+            <div>
+              <div class="input-label" style="margin-bottom:6px">Speech Speed: <strong id="speed-label">Normal</strong></div>
+              <input type="range" id="speed-slider" min="50" max="200" value="100" oninput="updateSpeed(this.value)" />
+            </div>
+            <hr class="hr" />
+            <div style="text-align:center">
+              <button class="btn btn-outline" style="height:40px; font-size:13px; padding:0 16px" onclick="testTTS()">🔊 Test Voice</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="form-section-label">Security</div>
+          <div class="settings-box">
+            <div class="settings-row">
+              <div class="settings-row-info">
+                <div class="settings-row-label">🔐 Biometric Unlock</div>
+                <div class="settings-row-sub">Use fingerprint or face ID</div>
+              </div>
+              <button class="switch off" id="sw-biometric" onclick="toggleSwitch(this)"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="form-section-label">About</div>
+          <div class="settings-box">
+            <div class="about-row"><span>Version</span><span>1.0.0 (Phase 2)</span></div>
+            <hr class="hr" />
+            <div class="about-row"><span>Features</span><span>Voice STT + Hindi NLP</span></div>
+          </div>
+        </div>
+
+        <button class="btn btn-danger" style="width:100%" onclick="if(confirm('Clear all reminders?')){clearAllReminders()}">🗑️ Clear All Reminders</button>
+      </div>
+    </div>
+
+  </div><!-- /screens -->
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav" id="bottom-nav" style="display:none">
+    <div class="nav-item active" id="nav-home" onclick="goTo('home')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      Home
+    </div>
+    <div class="nav-item" id="nav-settings" onclick="goTo('settings')">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      Settings
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+<div class="toast" id="toast"></div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════════ -->
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+let state = {
+  userName: '',
+  isOnboarded: false,
+  reminders: [],
+  ttsLang: 'en',
+  ttsSpeed: 1.0,
+  currentScreen: 'auth',
+  prevScreen: null,
+  selectedRecurrence: 'ONCE',
+  editingId: null,
+  alarmReminderId: null,
+  
+  // Voice Input specific state
+  voiceLanguage: 'en',
+  parsedTempReminder: null
+};
+
+// ── Load / Save ───────────────────────────────────────────────────────────────
+function loadState() {
+  const saved = localStorage.getItem('echocare_state');
+  if (saved) {
+    try { Object.assign(state, JSON.parse(saved)); } catch(e) {}
+  }
+}
+
+function saveState() {
+  localStorage.setItem('echocare_state', JSON.stringify(state));
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function init() {
+  loadState();
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  if (state.isOnboarded) {
+    goTo('home');
+    document.getElementById('bottom-nav').style.display = 'flex';
+  }
+  renderHome();
+  loadSettings();
+}
+
+// ── Clock ──────────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours(), m = now.getMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  const timeStr = `${h12}:${String(m).padStart(2,'0')}`;
+  document.getElementById('status-time').textContent = timeStr;
+  const alarmClock = document.getElementById('alarm-clock');
+  if (alarmClock) { alarmClock.textContent = timeStr; document.getElementById('alarm-ampm').textContent = ampm; }
+}
+
+// ── Navigation ─────────────────────────────────────────────────────────────────
+function goTo(screen) {
+  const prev = document.getElementById(state.currentScreen);
+  prev?.classList.remove('active');
+  prev?.classList.add('slide-back');
+  setTimeout(() => prev?.classList.remove('slide-back'), 300);
+
+  state.prevScreen = state.currentScreen;
+  state.currentScreen = screen;
+
+  const next = document.getElementById(screen);
+  next?.classList.add('active');
+
+  // Bottom nav highlight
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const navEl = document.getElementById(`nav-${screen}`);
+  if (navEl) navEl.classList.add('active');
+
+  // Show/hide bottom nav
+  const hideNav = ['auth','add','alarm','confirm-screen'];
+  document.getElementById('bottom-nav').style.display =
+    state.isOnboarded && !hideNav.includes(screen) ? 'flex' : 'none';
+
+  if (screen === 'home') renderHome();
+  if (screen === 'settings') loadSettings();
+  if (screen === 'add') initAddForm();
+  if (screen === 'alarm') { updateClock(); startAlarmAudio(); }
+}
+
+function goBack() {
+  const back = state.prevScreen || 'home';
+  const curr = document.getElementById(state.currentScreen);
+  curr?.classList.remove('active');
+  state.currentScreen = back;
+  const prev = document.getElementById(back);
+  prev?.classList.add('active');
+  document.getElementById('bottom-nav').style.display = state.isOnboarded ? 'flex' : 'none';
+  if (back === 'home') renderHome();
+}
+
+// ── Onboarding ─────────────────────────────────────────────────────────────────
+function completeOnboarding() {
+  const name = document.getElementById('auth-name').value.trim();
+  if (!name) { showToast('Please enter your name 😊'); return; }
+  state.userName   = name;
+  state.isOnboarded = true;
+  saveState();
+  document.getElementById('bottom-nav').style.display = 'flex';
+  goTo('home');
+}
+
+// ── Home rendering ─────────────────────────────────────────────────────────────
+function renderHome() {
+  const now = new Date();
+  const hour = now.getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('home-greeting').textContent = `${greet}, ${state.userName || 'there'}! 👋`;
+
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('home-date').textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+  const upcoming = state.reminders.filter(r => r.isActive && r.triggerTime > Date.now());
+  const count = upcoming.length;
+  document.getElementById('stats-count').textContent = count;
+  document.getElementById('upcoming-count').textContent = count;
+
+  const list = document.getElementById('reminder-list');
+  if (state.reminders.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="emoji">💤</div><p>No upcoming reminders.<br>Tap Mic to speak a reminder!</p></div>`;
+    return;
+  }
+
+  list.innerHTML = state.reminders.map(r => reminderCardHTML(r)).join('');
+}
+
+function reminderCardHTML(r) {
+  const isActive = r.isActive && r.triggerTime > Date.now();
+  const recMap = {ONCE:'1️⃣ Once', DAILY:'🔄 Daily', WEEKLY:'📅 Weekly', MONTHLY:'🗓️ Monthly', CUSTOM:'⚙️ Custom'};
+  const timeStr = formatTime(r.triggerTime);
+  return `
+  <div class="rem-card" id="rem-${r.id}">
+    <div class="rem-accent ${isActive ? '' : 'inactive'}"></div>
+    <div class="rem-body">
+      <div class="rem-title">${escHtml(r.title)}</div>
+      <div class="rem-msg">${escHtml(r.message)}</div>
+      <div class="rem-time">⏰ ${timeStr} &nbsp;<span class="badge">${recMap[r.recurrence]||r.recurrence}</span></div>
+    </div>
+    <div class="rem-actions">
+      <button class="toggle ${r.isActive ? 'on':'off'}" onclick="toggleReminder('${r.id}')"></button>
+      <button class="rem-act-btn" onclick="editReminder('${r.id}')" title="Edit">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+      </button>
+      <button class="rem-act-btn del" onclick="deleteReminder('${r.id}')" title="Delete">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+        </svg>
+      </button>
+    </div>
+  </div>`;
+}
+
+function toggleReminder(id) {
+  const r = state.reminders.find(r => r.id === id);
+  if (r) { r.isActive = !r.isActive; saveState(); renderHome(); }
+}
+
+function editReminder(id) {
+  state.editingId = id;
+  goTo('add');
+}
+
+function deleteReminder(id) {
+  if (!confirm('Delete this reminder?')) return;
+  state.reminders = state.reminders.filter(r => r.id !== id);
+  saveState(); renderHome();
+  showToast('Reminder deleted');
+}
+
+function clearAllReminders() {
+  state.reminders = []; saveState(); renderHome();
+  showToast('All reminders cleared');
+}
+
+// ── Manual form logic ─────────────────────────────────────────────────────────
+function initAddForm() {
+  const titleEl   = document.getElementById('rem-title');
+  const msgEl     = document.getElementById('rem-message');
+  const dateEl    = document.getElementById('rem-date');
+  const timeEl    = document.getElementById('rem-time');
+  document.getElementById('form-error').style.display = 'none';
+
+  if (state.editingId) {
+    const r = state.reminders.find(r => r.id === state.editingId);
+    if (r) {
+      titleEl.value = r.title;
+      msgEl.value   = r.message;
+      document.getElementById('add-title').textContent = 'Edit Reminder';
+      document.getElementById('save-btn').textContent  = '✏️ Update Reminder';
+      const d = new Date(r.triggerTime);
+      dateEl.value  = d.toISOString().split('T')[0];
+      timeEl.value  = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      updateDateDisplay(); updateTimeDisplay();
+      selectRecurrenceByValue(r.recurrence);
+      return;
+    }
+  }
+
+  document.getElementById('add-title').textContent = 'New Reminder';
+  document.getElementById('save-btn').textContent  = '🔔 Set Reminder';
+  titleEl.value = ''; msgEl.value = '';
+  const soon = new Date(Date.now() + 2 * 60000);
+  dateEl.value = soon.toISOString().split('T')[0];
+  timeEl.value = `${String(soon.getHours()).padStart(2,'0')}:${String(soon.getMinutes()).padStart(2,'0')}`;
+  updateDateDisplay(); updateTimeDisplay();
+  selectRecurrenceByValue('ONCE');
+}
+
+function selectRecurrence(el) {
+  document.querySelectorAll('#add .recurrence-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  state.selectedRecurrence = el.dataset.r;
+}
+
+function selectRecurrenceByValue(val) {
+  document.querySelectorAll('#add .recurrence-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.r === val);
+  });
+  state.selectedRecurrence = val;
+}
+
+function updateDateDisplay() {
+  const v = document.getElementById('rem-date').value;
+  if (!v) return;
+  const d = new Date(v + 'T00:00:00');
+  document.getElementById('date-display').textContent = formatDateDisplayStr(d);
+}
+
+function updateTimeDisplay() {
+  const v = document.getElementById('rem-time').value;
+  if (!v) return;
+  const [h,m] = v.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  document.getElementById('time-display').textContent = `${h%12||12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+function saveReminder() {
+  const title = document.getElementById('rem-title').value.trim();
+  const msg   = document.getElementById('rem-message').value.trim();
+  const dateV = document.getElementById('rem-date').value;
+  const timeV = document.getElementById('rem-time').value;
+
+  if (!title || !msg || !dateV || !timeV) { showFormErr('Please complete all fields'); return; }
+  const [h,mi] = timeV.split(':').map(Number);
+  const triggerTime = new Date(dateV);
+  triggerTime.setHours(h, mi, 0, 0);
+
+  if (state.editingId) {
+    const r = state.reminders.find(r => r.id === state.editingId);
+    if (r) {
+      Object.assign(r, { title, message:msg, triggerTime:triggerTime.getTime(), recurrence:state.selectedRecurrence, isActive:true });
+    }
+    state.editingId = null;
+  } else {
+    state.reminders.push({
+      id: Date.now().toString(), title, message:msg,
+      triggerTime: triggerTime.getTime(), recurrence: state.selectedRecurrence,
+      isActive: true, createdAt: Date.now()
+    });
+  }
+  saveState();
+  goTo('home');
+}
+
+function showFormErr(msg) {
+  const el = document.getElementById('form-error');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+
+// ── VOICE SPEECH RECOGNITION (PHASE 2 SPECIAL) ────────────────────────────────
+let speechRecognition = null;
+let visualizerInterval = null;
+let animationFrameId = null;
+
+function openVoiceOverlay() {
+  const overlay = document.getElementById('voice-overlay');
+  overlay.classList.add('active');
+  document.getElementById('transcript-txt').innerHTML = '<span class="transcript-placeholder">Start speaking now...</span>';
+  
+  state.voiceLanguage = state.ttsLang;
+  document.getElementById('voice-chip-en').classList.toggle('active', state.voiceLanguage === 'en');
+  document.getElementById('voice-chip-hi').classList.toggle('active', state.voiceLanguage === 'hi');
+
+  // Visualizer animation setup
+  startWaveformAnimation();
+
+  // STT start
+  initSpeechRecognition();
+}
+
+function setVoiceLang(lang) {
+  state.voiceLanguage = lang;
+  document.getElementById('voice-chip-en').classList.toggle('active', lang === 'en');
+  document.getElementById('voice-chip-hi').classList.toggle('active', lang === 'hi');
+  if (speechRecognition) {
+    speechRecognition.stop();
+  }
+}
+
+function startWaveformAnimation() {
+  const bars = document.querySelectorAll('.visualizer-bar');
+  const animate = () => {
+    bars.forEach(bar => {
+      // Simulate speech amplitude
+      const val = Math.random() * 45 + 5;
+      bar.style.height = `${val}px`;
+    });
+    animationFrameId = requestAnimationFrame(animate);
+  };
+  animate();
+}
+
+function stopWaveformAnimation() {
+  cancelAnimationFrame(animationFrameId);
+  const bars = document.querySelectorAll('.visualizer-bar');
+  bars.forEach(bar => bar.style.height = '10px');
+}
+
+function initSpeechRecognition() {
+  const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Speech) {
+    document.getElementById('voice-status').textContent = "Demo Mode";
+    document.getElementById('voice-sub').textContent = "Speech API not supported. Please use Mock buttons below.";
+    return;
+  }
+
+  document.getElementById('voice-status').textContent = "Listening...";
+  document.getElementById('voice-sub').textContent = "Speak naturally now...";
+
+  speechRecognition = new Speech();
+  speechRecognition.continuous = true;
+  speechRecognition.interimResults = true;
+  speechRecognition.lang = state.voiceLanguage === 'hi' ? 'hi-IN' : 'en-IN';
+
+  speechRecognition.onresult = (e) => {
+    let transcript = "";
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    document.getElementById('transcript-txt').textContent = transcript;
+  };
+
+  speechRecognition.onerror = (e) => {
+    console.error("STT Error", e);
+    if (e.error === 'not-allowed') {
+      document.getElementById('voice-status').textContent = "Permission Blocked";
+      document.getElementById('voice-sub').textContent = "Enable microphone permissions, or use simulator below.";
+    }
+  };
+
+  speechRecognition.onend = () => {
+    // If not closed by user, restart with the new language setting if it was switched
+    if (document.getElementById('voice-overlay').classList.contains('active')) {
+      speechRecognition.lang = state.voiceLanguage === 'hi' ? 'hi-IN' : 'en-IN';
+      try { speechRecognition.start(); } catch(e){}
+    }
+  };
+
+  try {
+    speechRecognition.start();
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function stopVoiceRecognition() {
+  const txt = document.getElementById('transcript-txt').textContent.trim();
+  closeVoiceOverlay();
+  
+  if (txt && !txt.includes("Start speaking now")) {
+    processTranscript(txt);
+  } else {
+    showToast("No speech detected.");
+  }
+}
+
+function simulateVoice(text) {
+  document.getElementById('transcript-txt').textContent = text;
+  setTimeout(() => {
+    closeVoiceOverlay();
+    processTranscript(text);
+  }, 600);
+}
+
+function closeVoiceOverlay() {
+  document.getElementById('voice-overlay').classList.remove('active');
+  stopWaveformAnimation();
+  if (speechRecognition) {
+    speechRecognition.onend = null;
+    speechRecognition.stop();
+    speechRecognition = null;
+  }
+}
+
+// ── SPEECH NLP PARSING ENGINE (PHASE 2 TARGET) ────────────────────────────────
+function processTranscript(text) {
+  // Regex Intent extraction
+  let lower = text.toLowerCase().trim();
+  let title = "Medicine Reminder";
+  let message = text;
+  let recipient = "Self";
+  let recurrence = "ONCE";
+  let triggerTime = Date.now() + 10 * 60000; // default 10 mins from now
+  let recurrenceIntervalHours = 2;
+
+  // 1. Recipient Extraction
+  // English: "tell [name] to [msg]", "remind [name] to [msg]"
+  const tellMatch = text.match(/^(?:tell|remind)\s+([a-zA-Z\u0900-\u097F]+)\s+to\s+(.*)$/i);
+  if (tellMatch) {
+    const name = tellMatch[1].trim();
+    if (name.toLowerCase() !== 'me' && name.toLowerCase() !== 'myself') {
+      recipient = name;
+      message = tellMatch[2];
+    } else {
+      message = tellMatch[2];
+    }
+  }
+
+  // Hindi: "[name] को [msg] कहो" or "[name] को [msg] के लिए कहो"
+  const hiTellMatch = text.match(/^([\u0900-\u097F]+)\s+को\s+(.*)\s+(?:के\s+लिए\s+)?(?:कहो|याद\s+dilaao|याद\s+दिलाओ)$/i);
+  if (hiTellMatch) {
+    const name = hiTellMatch[1].trim();
+    if (name !== 'मुझे' && name !== 'मुझको') {
+      recipient = name;
+      message = hiTellMatch[2];
+    } else {
+      message = hiTellMatch[2];
+    }
+  }
+
+  // 2. Recurrence Extraction
+  // Hours custom interval: "every 2 hours", "हर 2 घंटे में"
+  const hrMatch = lower.match(/every\s+(\d+|one|two|three|four|five|six)?\s*hours?/i);
+  const hiHrMatch = lower.match(/हर\s+(\d+|एक|दो|तीन|चार|पांच)?\s*घंटे/i);
+  
+  if (hrMatch || hiHrMatch) {
+    recurrence = "CUSTOM";
+    let hrVal = 1;
+    const num = hrMatch ? (hrMatch[1]||"") : (hiHrMatch[1]||"");
+    if (num) {
+      if (/\d+/.test(num)) hrVal = parseInt(num);
+      else if (num.includes("two") || num.includes("दो")) hrVal = 2;
+      else if (num.includes("three") || num.includes("तीन")) hrVal = 3;
+      else if (num.includes("four") || num.includes("चार")) hrVal = 4;
+      else if (num.includes("five") || num.includes("पांच")) hrVal = 5;
+    }
+    recurrenceIntervalHours = hrVal;
+  } else if (lower.includes("every day") || lower.includes("daily") || lower.includes("रोज़") || lower.includes("रोजाना") || lower.includes("हर दिन") || lower.includes("प्रतिदिन")) {
+    recurrence = "DAILY";
+  } else if (lower.includes("every week") || lower.includes("weekly") || lower.includes("हर हफ्ते") || lower.includes("साप्ताहिक")) {
+    recurrence = "WEEKLY";
+  } else if (lower.includes("every month") || lower.includes("monthly") || lower.includes("हर महीने") || lower.includes("मासिक")) {
+    recurrence = "MONTHLY";
+  }
+
+  // 3. Time extraction
+  let timeMatch = lower.match(/(\d+)(?::(\d+))?\s*(am|pm)?/);
+  let resolvedHour = null;
+  let resolvedMin = 0;
+
+  if (timeMatch) {
+    let rawHr = parseInt(timeMatch[1]);
+    let rawMin = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+    let ampm = timeMatch[3];
+    if (rawHr >= 1 && rawHr <= 24) {
+      resolvedHour = rawHr;
+      resolvedMin = rawMin;
+      if (ampm === 'pm' && resolvedHour < 12) resolvedHour += 12;
+      if (ampm === 'am' && resolvedHour === 12) resolvedHour = 0;
+    }
+  }
+
+  // Hindi "बजे" handler: "8 बजे"
+  const hiBajeMatch = lower.match(/(\d+)(?:\s*:\s*(\d+))?\s*बजे/);
+  if (hiBajeMatch) {
+    resolvedHour = parseInt(hiBajeMatch[1]);
+    resolvedMin = hiBajeMatch[2] ? parseInt(hiBajeMatch[2]) : 0;
+    // Context check for AM/PM
+    const isPm = lower.includes("रात") || lower.includes("शाम") || lower.includes("दोपहर");
+    if (isPm && resolvedHour < 12) resolvedHour += 12;
+    const isAm = lower.includes("सुबह");
+    if (isAm && resolvedHour === 12) resolvedHour = 0;
+  }
+
+  let finalDate = new Date();
+  if (lower.includes("tomorrow") || lower.includes("कल")) {
+    finalDate.setDate(finalDate.getDate() + 1);
+  }
+
+  if (resolvedHour !== null) {
+    finalDate.setHours(resolvedHour, resolvedMin, 0, 0);
+    // If the resolved time today has already passed, schedule for tomorrow
+    if (finalDate.getTime() <= Date.now() && !lower.includes("tomorrow") && !lower.includes("कल")) {
+      finalDate.setDate(finalDate.getDate() + 1);
+    }
+    triggerTime = finalDate.getTime();
+  }
+
+  // 4. Message Cleanup (remove stop words)
+  let cleanMsg = message;
+  const stopPhrases = [
+    /at \d+(?::\d+)?\s*(?:am|pm)?/ig,
+    /\d+\s*बजे/g,
+    /tomorrow/ig, /कल/g, /today/ig, /आज/g,
+    /every day/ig, /daily/ig, /रोज़/g, /रोजाना/g, /हर दिन/g, /प्रतिदिन/g,
+    /every week/ig, /weekly/ig, /हर हफ्ते/g, /साप्ताहिक/g,
+    /every month/ig, /monthly/ig, /हर महीने/g, /मासिक/g,
+    /every \d+\s*hours?/ig, /every hour/ig, /हर \d+\s*घंटे\s*में/g, /हर घंटे/g,
+    /सुबह/g, /शाम/g, /रात/g, /दोपहर/g
+  ];
+  stopPhrases.forEach(pat => { cleanMsg = cleanMsg.replace(pat, ""); });
+  cleanMsg = cleanMsg.replace(/[,.?!-]/g, " ").replace(/\s+/g, " ").trim();
+
+  if (!cleanMsg) {
+    cleanMsg = recipient !== "Self" ? `Care for ${recipient}` : "Medicine reminder";
+  }
+
+  // Set Title as the first three words capped
+  title = cleanMsg.split(" ").slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+
+  state.parsedTempReminder = {
+    title,
+    message: recipient !== "Self" ? `${recipient}, ${cleanMsg}` : cleanMsg,
+    recipient,
+    recurrence,
+    triggerTime,
+    recurrenceIntervalHours
+  };
+
+  // Open confirmation screen
+  loadConfirmationData();
+}
+
+function loadConfirmationData() {
+  const r = state.parsedTempReminder;
+  document.getElementById('conf-title').value = r.title;
+  document.getElementById('conf-message').value = r.message;
+  document.getElementById('conf-recipient').textContent = r.recipient !== "Self" ? `👤 ${r.recipient}` : "👤 Self";
+  
+  const d = new Date(r.triggerTime);
+  const localDateStr = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  document.getElementById('conf-date').value = localDateStr;
+  document.getElementById('conf-time').value = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  updateConfDateDisplay();
+  updateConfTimeDisplay();
+
+  // Select recurrence type
+  document.querySelectorAll('#confirm-screen .recurrence-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.r === r.recurrence);
+  });
+  
+  const sliderWrap = document.getElementById('conf-custom-slider-wrap');
+  if (r.recurrence === 'CUSTOM') {
+    sliderWrap.style.display = 'flex';
+    document.getElementById('conf-custom-slider').value = r.recurrenceIntervalHours;
+    document.getElementById('conf-custom-val').textContent = r.recurrenceIntervalHours;
+  } else {
+    sliderWrap.style.display = 'none';
+  }
+
+  goTo('confirm-screen');
+}
+
+function selectConfRec(el) {
+  document.querySelectorAll('#confirm-screen .recurrence-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  state.parsedTempReminder.recurrence = el.dataset.r;
+  
+  const sliderWrap = document.getElementById('conf-custom-slider-wrap');
+  if (el.dataset.r === 'CUSTOM') {
+    sliderWrap.style.display = 'flex';
+  } else {
+    sliderWrap.style.display = 'none';
+  }
+}
+
+function updateConfDateDisplay() {
+  const v = document.getElementById('conf-date').value;
+  if (!v) return;
+  const d = new Date(v + 'T00:00:00');
+  document.getElementById('conf-date-display').textContent = formatDateDisplayStr(d);
+}
+
+function updateConfTimeDisplay() {
+  const v = document.getElementById('conf-time').value;
+  if (!v) return;
+  const [h,m] = v.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  document.getElementById('conf-time-display').textContent = `${h%12||12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+function saveConfReminder() {
+  const title = document.getElementById('conf-title').value.trim();
+  const msg = document.getElementById('conf-message').value.trim();
+  const dateV = document.getElementById('conf-date').value;
+  const timeV = document.getElementById('conf-time').value;
+
+  if (!title || !msg || !dateV || !timeV) { showToast("Please check all fields"); return; }
+  
+  const [h,mi] = timeV.split(':').map(Number);
+  const trigger = new Date(dateV);
+  trigger.setHours(h, mi, 0, 0);
+
+  const rec = state.parsedTempReminder.recurrence;
+  const customHrs = rec === 'CUSTOM' ? parseInt(document.getElementById('conf-custom-slider').value) : 0;
+
+  state.reminders.push({
+    id: Date.now().toString(),
+    title,
+    message: msg,
+    triggerTime: trigger.getTime(),
+    recurrence: rec,
+    recurrenceIntervalHours: customHrs,
+    isActive: true,
+    createdAt: Date.now()
+  });
+
+  saveState();
+  showToast("✅ Voice reminder set!");
+  goTo('home');
+}
+
+function formatDateDisplayStr(d) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate()+1);
+  return d.toDateString() === today.toDateString() ? 'Today' :
+         d.toDateString() === tomorrow.toDateString() ? 'Tomorrow' :
+         d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+
+// ── Alarm trigger simulation ───────────────────────────────────────────────────
+function triggerAlarmDemo(reminderId) {
+  const r = reminderId
+    ? state.reminders.find(r => r.id === reminderId)
+    : state.reminders.find(r => r.isActive) || {
+        title: 'BP Medicine',
+        message: 'Papa, please take your blood pressure medication'
+      };
+
+  document.getElementById('alarm-title').textContent   = r.title;
+  document.getElementById('alarm-message').textContent = r.message;
+  state.alarmReminderId = r.id || null;
+  goTo('alarm');
+}
+
+function startAlarmAudio() {
+  const msg = document.getElementById('alarm-message').textContent;
+  speakText(msg);
+}
+
+function acknowledgeAlarm() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  showToast('✅ Acknowledged!');
+  goTo('home');
+}
+
+function snoozeAlarm() {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  showToast('😴 Snoozed for 5 minutes');
+  goTo('home');
+}
+
+// ── Settings configurations ───────────────────────────────────────────────────
+function loadSettings() {
+  document.getElementById('settings-name').value = state.userName || '';
+  document.getElementById('chip-en').classList.toggle('active', state.ttsLang === 'en');
+  document.getElementById('chip-hi').classList.toggle('active', state.ttsLang === 'hi');
+  document.getElementById('speed-slider').value = state.ttsSpeed * 100;
+  updateSpeedLabel(state.ttsSpeed * 100);
+}
+
+function saveSetting(key, val) {
+  state[key] = val; saveState();
+}
+
+function setLang(lang) {
+  state.ttsLang = lang; saveState();
+  document.getElementById('chip-en').classList.toggle('active', lang === 'en');
+  document.getElementById('chip-hi').classList.toggle('active', lang === 'hi');
+  showToast(`Language set to ${lang === 'en' ? '🇬🇧 English' : '🇮🇳 Hindi'}`);
+}
+
+function updateSpeed(val) {
+  state.ttsSpeed = val / 100; saveState();
+  updateSpeedLabel(val);
+}
+
+function updateSpeedLabel(val) {
+  const label = val <= 75 ? 'Slow' : val <= 125 ? 'Normal' : 'Fast';
+  document.getElementById('speed-label').textContent = `${label} (${val/100}x)`;
+}
+
+function toggleSwitch(el) {
+  el.classList.toggle('on'); el.classList.toggle('off');
+}
+
+function testTTS() {
+  const phrases = { en: 'Hello! This is EchoCare speaking your reminder.', hi: 'नमस्ते! यह एकोकेयर से आपकी याददाश्त है।' };
+  speakText(phrases[state.ttsLang] || phrases.en);
+}
+
+// ── TTS engine via Browser Synthesis ──────────────────────────────────────────
+function speakText(text) {
+  if (!window.speechSynthesis) { showToast('TTS not supported in this browser'); return; }
+  window.speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.lang  = state.ttsLang === 'hi' ? 'hi-IN' : 'en-IN';
+  utt.rate  = state.ttsSpeed || 1.0;
+  utt.pitch = 1;
+  const voices = window.speechSynthesis.getVoices();
+  const match  = voices.find(v => v.lang.startsWith(utt.lang.split('-')[0]));
+  if (match) utt.voice = match;
+  window.speechSynthesis.speak(utt);
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────────────
+function formatTime(ms) {
+  const now  = Date.now();
+  const diff = ms - now;
+  if (diff < 0)          return new Date(ms).toLocaleString('en-IN', {dateStyle:'short', timeStyle:'short'});
+  if (diff < 60000)      return 'In less than a minute';
+  if (diff < 3600000)    return `In ${Math.round(diff/60000)} min`;
+  if (diff < 86400000)   return 'Today at ' + new Date(ms).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  if (diff < 172800000)  return 'Tomorrow at ' + new Date(ms).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+  return new Date(ms).toLocaleString('en-IN', {dateStyle:'medium', timeStyle:'short'});
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+function resetApp() {
+  if (!confirm('Reset all app data?')) return;
+  localStorage.removeItem('echocare_state');
+  location.reload();
+}
+
+// ── Boot ───────────────────────────────────────────────────────────────────────
+init();
+window.speechSynthesis?.addEventListener('voiceschanged', () => {});
+</script>
+</body>
+</html>

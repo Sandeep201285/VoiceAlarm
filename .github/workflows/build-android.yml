@@ -1,0 +1,65 @@
+name: Compile Voice Alarm Production Android App
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'EchoCare/**'
+
+jobs:
+  build:
+    name: Build Signed release AAB & testing APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Up Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'zulu'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/*.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x ./EchoCare/gradlew
+        continue-on-error: true # Falls back if project uses system gradle
+
+      - name: Decode Android Keystore
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > ./EchoCare/app/keystore.jks
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+
+      - name: Compile Production App Bundle (AAB) & APK
+        run: |
+          cd EchoCare
+          ./gradlew bundleRelease assembleRelease
+        env:
+          KEYSTORE_PATH: "keystore.jks"
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload Signed Android App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: voice-alarm-release-aab
+          path: EchoCare/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Upload Testing APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: voice-alarm-testing-apk
+          path: EchoCare/app/build/outputs/apk/release/app-release.apk

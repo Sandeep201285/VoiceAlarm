@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EchoCare – Final Consolidated Feature Demo</title>
+<style>
+  /* ── Reset & Base Styles ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --bg:         #0A0B18;
+    --surface:    #12142B;
+    --surfvar:    #1C1F3D;
+    --card:       #1A1D38;
+    --outline:    #3A3D5C;
+    --primary:    #8B5CF6;
+    --primary-c:  #4C1D95;
+    --on-primary: #FFFFFF;
+    --secondary:  #22D3EE;
+    --amber:      #FBBF24;
+    --error:      #EF4444;
+    --success:    #10B981;
+    --text:       #E8E9FF;
+    --text2:      #8B8FA8;
+    --radius:     18px;
+    --transition: 0.3s cubic-bezier(.4,0,.2,1);
+  }
+
+  body {
+    background: #050610;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 24px 16px 40px;
+    font-family: 'Outfit', -apple-system, sans-serif;
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  /* ── Page Header ─────────────────────────────────────────────────── */
+  .page-header {
+    width: 100%;
+    max-width: 1020px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .page-header h1 { font-size: 26px; color: var(--primary); font-weight: 800; }
+  .page-header p  { font-size: 14px; color: var(--text2); margin-top: 4px; }
+
+  /* ── Main Layout ─────────────────────────────────────────────────── */
+  .layout-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 40px;
+    width: 100%;
+    max-width: 1020px;
+  }
+
+  /* ── Mock Phone Frame ────────────────────────────────────────────── */
+  .phone {
+    width: 360px;
+    height: 760px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 3px solid var(--outline);
+    box-shadow: 0 20px 50px rgba(0,0,0,.6), 0 0 80px rgba(139,92,246,.08);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  /* Screen Container */
+  .screens {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(30px);
+    transition: opacity var(--transition), transform var(--transition);
+    scrollbar-width: none;
+    z-index: 1;
+  }
+  .screen::-webkit-scrollbar { display: none; }
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateX(0);
+    z-index: 2;
+  }
+
+  /* ── Onboarding & Walkthrough ────────────────────────────────────── */
+  .onboarding-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    text-align: center;
+  }
+  .onboard-icon {
+    width: 100px;
+    height: 100px;
+    border-radius: 28px;
+    background: linear-gradient(135deg, rgba(139,92,246,.2), rgba(34,211,238,.1));
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    margin-bottom: 20px;
+  }
+  .onboard-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 10px; }
+  .onboard-desc { font-size: 13px; color: var(--text2); line-height: 1.5; }
+  
+  .onboard-footer {
+    padding: 24px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .dots-indicator { display: flex; gap: 8px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--outline); transition: var(--transition); }
+  .dot.active { background: var(--primary); transform: scale(1.2); }
+
+  /* Permissions Checklist */
+  .perm-checklist {
+    width: 100%;
+    background: var(--surfvar);
+    border-radius: 16px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+    margin-top: 14px;
+  }
+  .perm-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .perm-info { flex: 1; }
+  .perm-title { font-size: 11.5px; font-weight: 700; color: var(--text); }
+  .perm-desc { font-size: 9px; color: var(--text2); }
+  .perm-status {
+    width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 10px; font-weight: 800; background: var(--outline); color: var(--text2);
+  }
+  .perm-status.granted { background: rgba(16,185,129,.2); color: var(--success); }
+
+  /* ── Overlays: Biometric & Paywall ───────────────────────────────── */
+  .lock-overlay, .paywall-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition);
+  }
+  .lock-overlay.active, .paywall-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Paywall Specific Styling */
+  .paywall-overlay {
+    background: radial-gradient(circle at 50% 10%, rgba(139,92,246,.25) 0%, transparent 60%), #0D0B1C;
+    overflow-y: auto;
+    justify-content: flex-start;
+  }
+  .paywall-features {
+    width: 100%; background: rgba(255,255,255,0.03); border: 1.5px solid rgba(255,255,255,0.06);
+    border-radius: 16px; padding: 14px; text-align: left; margin: 16px 0;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .paywall-feature-row { display: flex; gap: 10px; }
+  .paywall-feature-title { font-size: 12.5px; font-weight: 700; color: #fff; }
+  .paywall-feature-desc { font-size: 10px; color: var(--text2); }
+
+  .paywall-plans {
+    display: flex; flex-direction: column; gap: 8px; width: 100%;
+  }
+  .paywall-plan-card {
+    background: rgba(255,255,255,0.02); border: 1.5px solid var(--outline);
+    border-radius: 12px; padding: 12px; display: flex; align-items: center;
+    justify-content: space-between; cursor: pointer;
+  }
+  .paywall-plan-card.active {
+    border-color: var(--amber); background: rgba(251,191,36,0.07);
+  }
+  .paywall-price { font-size: 18px; font-weight: 900; color: var(--amber); }
+  
+  .cc-form {
+    width: 100%; display: flex; flex-direction: column; gap: 8px; margin-top: 16px;
+  }
+  .cc-row { display: flex; gap: 8px; }
+
+  /* Lock Scan animations */
+  .lock-scanner {
+    width: 90px; height: 90px; border-radius: 28px;
+    background: linear-gradient(135deg, rgba(139,92,246,0.3), rgba(34,211,238,0.1));
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px; cursor: pointer; position: relative;
+  }
+  .lock-scanner::after {
+    content: ''; position: absolute; inset: -4px; border-radius: 32px;
+    border: 2px dashed var(--primary); opacity: 0.5; animation: spin 8s linear infinite;
+  }
+  .fingerprint-ripple {
+    position: absolute; width: 100%; height: 100%; border-radius: 50%;
+    border: 2px solid var(--secondary); opacity: 0; pointer-events: none;
+  }
+  .scanning .fingerprint-ripple { animation: ripple 1.2s ease-out infinite; }
+
+  /* ── Dashboard & Views ───────────────────────────────────────────── */
+  .topbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 4px; }
+  .topbar-title { font-size: 17px; font-weight: 800; }
+  .topbar-sub { font-size: 11px; color: var(--text2); }
+  
+  .topbar-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--surfvar);
+    border: none; cursor: pointer; color: var(--text); display: flex;
+    align-items: center; justify-content: center;
+  }
+  .icon-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+  /* Warning Alert Banner for optimization whitelisting */
+  .opt-banner {
+    margin: 6px 14px; background: rgba(239,68,68,0.13); border: 1px dashed var(--error);
+    border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; cursor: pointer;
+  }
+  .opt-banner-icon { font-size: 16px; }
+  .opt-banner-title { font-size: 10.5px; font-weight: 700; color: #ff9f9f; }
+  .opt-banner-desc { font-size: 8.5px; color: var(--text2); }
+
+  .stats-banner {
+    margin: 4px 14px; border-radius: 16px;
+    background: linear-gradient(135deg, var(--primary-c), #1a3a5c);
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .stats-num { font-size: 28px; font-weight: 900; }
+  .stats-lbl { font-size: 10.5px; color: rgba(255,255,255,.7); }
+
+  .reminder-list { flex: 1; padding: 8px 14px; overflow-y: auto; }
+  .list-hdr { font-size: 12.5px; font-weight: 700; margin: 6px 0; color: var(--secondary); }
+  .rem-card {
+    background: var(--card); border-radius: 14px; border: 1px solid rgba(255,255,255,.04);
+    padding: 12px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+  }
+  .rem-info { flex: 1; }
+  .rem-title { font-size: 12.5px; font-weight: 700; margin-bottom: 2px; }
+  .rem-desc { font-size: 9.5px; color: var(--text2); }
+  .rem-time { font-size: 9.5px; color: var(--primary); font-weight: 600; margin-top: 4px; }
+  
+  /* Buttons & Toggles */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 42px; border-radius: 12px; border: none; cursor: pointer;
+    font-size: 12.5px; font-weight: 700; padding: 0 16px; transition: transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(139,92,246,0.3); }
+  .btn-secondary { background: var(--amber); color: #000; }
+  .btn-outline { background: transparent; border: 1.5px solid var(--outline); color: var(--text); }
+  .btn-block { width: 100%; }
+
+  .toggle {
+    width: 32px; height: 18px; border-radius: 99px; position: relative;
+    cursor: pointer; border: none; transition: background 0.2s;
+  }
+  .toggle.on { background: var(--primary); }
+  .toggle.off { background: var(--outline); }
+  .toggle::after {
+    content: ''; position: absolute; width: 12px; height: 12px;
+    border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: left 0.2s;
+  }
+  .toggle.on::after { left: 17px; }
+
+  /* Settings Panel */
+  .settings-body { padding: 14px; display: flex; flex-direction: column; gap: 16px; }
+  .settings-section { display: flex; flex-direction: column; gap: 8px; }
+  .settings-sec-title { font-size: 11.5px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
+  .settings-sec-card {
+    background: var(--surfvar); border-radius: 16px; padding: 12px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; }
+  .settings-row-info { flex: 1; padding-right: 12px; }
+  .settings-row-label { font-size: 11.5px; font-weight: 600; }
+  .settings-row-sub { font-size: 9px; color: var(--text2); }
+
+  .settings-text-input {
+    background: var(--surface); border: 1px solid var(--outline);
+    border-radius: 10px; color: #fff; padding: 8px 12px; font-size: 12.5px;
+    outline: none; font-family: inherit; width: 100%;
+  }
+
+  .chip-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .chip {
+    padding: 4px 8px; border-radius: 8px; font-size: 10.5px; font-weight: 600;
+    border: 1.5px solid var(--outline); background: transparent; color: var(--text2);
+    cursor: pointer;
+  }
+  .chip.active {
+    border-color: var(--primary); background: rgba(139,92,246,0.15); color: var(--primary);
+  }
+
+  .slider {
+    width: 100%; height: 4px; border-radius: 2px; background: var(--outline);
+    outline: none; -webkit-appearance: none; margin-top: 4px;
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%;
+    background: var(--primary); cursor: pointer;
+  }
+
+  /* Bottom Nav */
+  .bottom-nav {
+    display: flex; border-top: 1px solid var(--outline); background: var(--surface); padding-bottom: 12px;
+  }
+  .nav-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 8px 0 2px; gap: 4px; cursor: pointer; font-size: 9px; color: var(--text2);
+  }
+  .nav-item.active { color: var(--primary); }
+  .nav-item svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+  /* Floating Action Buttons */
+  .fab {
+    position: absolute; bottom: 20px; right: 20px;
+    width: 50px; height: 50px; border-radius: 16px;
+    background: var(--primary); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(139,92,246,0.4); z-index: 10;
+  }
+  .fab svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+  /* Voice/Mic dialog */
+  .voice-box {
+    position: absolute; inset: 0; background: rgba(5,6,16,0.95);
+    z-index: 99; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 24px; text-align: center;
+    opacity: 0; pointer-events: none; transition: opacity var(--transition);
+  }
+  .voice-box.active { opacity: 1; pointer-events: all; }
+  .wave-container { display: flex; gap: 4px; height: 36px; align-items: center; margin: 20px 0; }
+  .wave-bar {
+    width: 3px; height: 8px; border-radius: 3px; background: var(--secondary);
+    animation: wave 1.2s ease-in-out infinite alternate;
+  }
+  .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+  .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+  .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+  .wave-bar:nth-child(5) { animation-delay: 0.6s; }
+  @keyframes wave { 0% { height: 8px; } 100% { height: 28px; } }
+  .transcript-card {
+    background: var(--surfvar); border: 1.5px solid var(--outline);
+    border-radius: 12px; padding: 12px; width: 100%; min-height: 80px;
+    display: flex; align-items: center; justify-content: center; margin-bottom: 20px; font-size: 13px;
+  }
+
+  /* Crash / Dialog Overlay */
+  .crash-overlay {
+    position: absolute; inset: 0; background: #000; z-index: 1000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px; color: #ff5f5f; font-family: monospace; opacity: 0; pointer-events: none;
+  }
+  .crash-overlay.active { opacity: 1; pointer-events: all; }
+  .crash-trace {
+    width: 100%; height: 320px; background: #111; border: 1px solid #333; border-radius: 12px;
+    padding: 10px; overflow-y: auto; font-size: 9px; color: #00ff66; text-align: left; margin-top: 14px; white-space: pre;
+  }
+
+  /* Custom Dialog inside Phone */
+  .phone-dialog {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.85); z-index: 900;
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+    opacity: 0; pointer-events: none; transition: opacity var(--transition);
+  }
+  .phone-dialog.active { opacity: 1; pointer-events: all; }
+  .dialog-card {
+    background: var(--surface); border: 1px solid var(--outline); border-radius: 16px;
+    width: 100%; max-height: 480px; display: flex; flex-direction: column;
+  }
+  .dialog-hdr { padding: 12px 16px; border-bottom: 1px solid var(--outline); display: flex; justify-content: space-between; align-items: center; }
+  .dialog-title { font-size: 12.5px; font-weight: 700; }
+  .dialog-body { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .dialog-log-item { background: var(--surfvar); border-radius: 8px; padding: 8px; font-size: 9.5px; }
+  .dialog-log-row { display: flex; justify-content: space-between; font-weight: 700; color: var(--primary); margin-bottom: 2px; }
+
+  /* ── Debugger Logcat Panel ────────────────────────────────────────── */
+  .debug-panel {
+    flex: 1; height: 760px; background: var(--surface); border: 1.5px solid var(--outline);
+    border-radius: 24px; display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  }
+  .panel-hdr {
+    padding: 14px 18px; border-bottom: 1px solid var(--outline);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-title {
+    font-size: 13px; font-weight: 800; color: var(--secondary); display: flex; align-items: center; gap: 6px;
+  }
+  .logcat-console {
+    flex: 1; background: #05060d; padding: 14px; overflow-y: auto;
+    font-family: monospace; font-size: 11px; color: #a5b4fc; display: flex; flex-direction: column; gap: 6px;
+  }
+  .logcat-line { line-height: 1.4; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px; }
+  .logcat-tag { font-weight: 700; color: var(--primary); }
+  .logcat-event { color: var(--secondary); }
+  .logcat-param { color: #e2e8f0; }
+  .logcat-error { color: var(--error); }
+  .logcat-warn { color: var(--amber); }
+
+  .control-box {
+    padding: 12px 18px; border-top: 1px solid var(--outline); background: var(--surfvar); display: flex; gap: 12px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Page Header ───────────────────────────────────────────────── -->
+<div class="page-header">
+  <h1>👑 EchoCare — Final Feature Consolidation Demo</h1>
+  <p>Simulating premium upgrades, quick-add templates, local JSON database backups, smart home Assistant integrations, and voice calibration prompts.</p>
+</div>
+
+<!-- ── Main Layout ───────────────────────────────────────────────── -->
+<div class="layout-container">
+
+  <!-- ==========================================
+       MOCK PHONE CONTAINER
+  =========================================== -->
+  <div class="phone" id="mock-device">
+    
+    <!-- System Status Bar -->
+    <div class="status-bar">
+      <span>11:50 AM</span>
+      <span style="font-weight:800; color:var(--primary)">EchoCare Pro</span>
+      <span>🔋 100%</span>
+    </div>
+
+    <!-- Biometric Lock Screen Overlay -->
+    <div class="lock-overlay" id="lock-screen">
+      <div class="lock-scanner" onclick="attemptUnlock()" id="lock-scanner">
+        <div class="fingerprint-ripple"></div>
+        <span style="font-size:40px">🖕</span>
+      </div>
+      <h2 style="font-size:16px; font-weight:800; margin-bottom:6px">EchoCare Locked</h2>
+      <p style="font-size:11.5px; color:var(--text2); margin-bottom:24px">Confirm biometrics to access your reminders.</p>
+      <button class="btn btn-primary" onclick="attemptUnlock()">Unlock App</button>
+    </div>
+
+    <!-- Fatal Crash Overlay -->
+    <div class="crash-overlay" id="crash-screen">
+      <span style="font-size:32px">⚠️</span>
+      <h2 style="font-size:14px; margin-top:8px">Fatal Crash Detected</h2>
+      <div class="crash-trace" id="crash-stack-trace"></div>
+      <button class="btn btn-secondary btn-block" style="margin-top:16px" onclick="recoverFromCrash()">Restart Application</button>
+    </div>
+
+    <!-- Premium Paywall Overlay -->
+    <div class="paywall-overlay" id="paywall-screen">
+      <div style="width:100%; text-align:right">
+        <span style="font-size:18px; cursor:pointer; font-weight:800; color:#fff" onclick="closePaywall()">✕</span>
+      </div>
+      <span style="font-size:32px; margin-top:10px">👑</span>
+      <h2 style="font-size:18px; font-weight:800; color:var(--amber); margin-top:6px">EchoCare Premium</h2>
+      <p style="font-size:11px; color:#aaa">Unlock advanced sharing, custom voices, and integrations</p>
+
+      <div class="paywall-features">
+        <div class="paywall-feature-row">
+          <span style="color:var(--amber)">✓</span>
+          <div>
+            <div class="paywall-feature-title">AI Voice Cloning</div>
+            <div class="paywall-feature-desc">Announce reminders in your actual recorded voice.</div>
+          </div>
+        </div>
+        <div class="paywall-feature-row">
+          <span style="color:var(--amber)">✓</span>
+          <div>
+            <div class="paywall-feature-title">Unlimited Caregiver Groups</div>
+            <div class="paywall-feature-desc">Broadcast reminders to up to 10 family devices.</div>
+          </div>
+        </div>
+        <div class="paywall-feature-row">
+          <span style="color:var(--amber)">✓</span>
+          <div>
+            <div class="paywall-feature-title">Smart Assistant Linking</div>
+            <div class="paywall-feature-desc">Sync notifications directly to Alexa & Google Nest.</div>
+          </div>
+        </div>
+        <div class="paywall-feature-row">
+          <span style="color:var(--amber)">✓</span>
+          <div>
+            <div class="paywall-feature-title">Automated Cloud Backups</div>
+            <div class="paywall-feature-desc">Safe sqlite sync & backup downloads.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="paywall-plans">
+        <div class="paywall-plan-card active" onclick="selectSubTier(this)">
+          <div style="text-align:left">
+            <div style="font-size:12px; font-weight:800">Yearly Plan (Recommended)</div>
+            <div style="font-size:9.5px; color:#aaa">Save 60% relative to monthly</div>
+          </div>
+          <div class="paywall-price">₹999/yr</div>
+        </div>
+        <div class="paywall-plan-card" onclick="selectSubTier(this)">
+          <div style="text-align:left">
+            <div style="font-size:12px; font-weight:800">Monthly Plan</div>
+            <div style="font-size:9.5px; color:#aaa">Recurring billing</div>
+          </div>
+          <div class="paywall-price">₹199/mo</div>
+        </div>
+      </div>
+
+      <!-- Simulated Credit Card Check -->
+      <div class="cc-form">
+        <input class="settings-text-input" style="font-size:11px" id="cc-number" type="text" placeholder="Card Number (4111 2222 3333 4444)" />
+        <div class="cc-row">
+          <input class="settings-text-input" style="font-size:11px" id="cc-expiry" type="text" placeholder="MM/YY" />
+          <input class="settings-text-input" style="font-size:11px" id="cc-cvv" type="text" placeholder="CVV" />
+        </div>
+      </div>
+
+      <button class="btn btn-secondary btn-block" style="margin-top:16px; font-weight:800" onclick="completePremiumPurchase()">Upgrade to Premium Plan</button>
+    </div>
+
+    <!-- Device Screens -->
+    <div class="screens">
+      
+      <!-- SCREEN 1: ONBOARDING WALKTHROUGH -->
+      <div class="screen active" id="scr-onboarding">
+        <div class="onboarding-content" id="onboard-pages">
+          <div id="slide-0" class="slide">
+            <div class="onboard-icon">🗣️</div>
+            <h3 class="onboard-title">Voice-First Alarms</h3>
+            <p class="onboard-desc">Speak naturally to create reminders. EchoCare automatically interprets commands and configures exact alarms on your device.</p>
+          </div>
+          
+          <div id="slide-1" class="slide" style="display:none">
+            <div class="onboard-icon">❤️</div>
+            <h3 class="onboard-title">Care For Family</h3>
+            <p class="onboard-desc">Create family groups and send reminders remotely. The spoken reminder triggers instantly on Papa's device, even if offline.</p>
+          </div>
+
+          <div id="slide-2" class="slide" style="display:none">
+            <h3 class="onboard-title" style="font-size:18px">System Permissions</h3>
+            <p class="onboard-desc" style="font-size:11px">Configure these system permissions to ensure voice alarms trigger reliably.</p>
+            <div class="perm-checklist">
+              <div class="perm-item">
+                <div class="perm-info">
+                  <div class="perm-title">Microphone Access</div>
+                  <div class="perm-desc">Used to capture spoken commands.</div>
+                </div>
+                <div class="perm-status" id="p-mic">✗</div>
+              </div>
+              <div class="perm-item">
+                <div class="perm-info">
+                  <div class="perm-title">Notifications Delivery</div>
+                  <div class="perm-desc">Displays full-screen overlays at alarm time.</div>
+                </div>
+                <div class="perm-status" id="p-notif">✗</div>
+              </div>
+              <div class="perm-item">
+                <div class="perm-info">
+                  <div class="perm-title">Exact Alarm Scheduler</div>
+                  <div class="perm-desc">Ensures alarms fire at the exact second.</div>
+                </div>
+                <div class="perm-status" id="p-alarm">✗</div>
+              </div>
+              <div class="perm-item">
+                <div class="perm-info">
+                  <div class="perm-title">Battery Optimization Whitelist</div>
+                  <div class="perm-desc">Prevents background processes from sleep.</div>
+                </div>
+                <div class="perm-status" id="p-battery">✗</div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-block" style="margin-top:14px; height:36px; font-size:11px" onclick="grantOnboardPermissions()" id="btn-grant-onboard">Configure System Permissions</button>
+          </div>
+
+          <div id="slide-3" class="slide" style="display:none">
+            <div class="onboard-icon">👤</div>
+            <h3 class="onboard-title">Set Up Profile</h3>
+            <p class="onboard-desc" style="margin-bottom:16px">Enter your name so family members recognize your shared reminders.</p>
+            <input class="settings-text-input" id="onboard-name-input" type="text" placeholder="e.g. Sandeep" style="text-align:center" />
+          </div>
+        </div>
+
+        <div class="onboard-footer">
+          <div class="dots-indicator">
+            <div class="dot active" id="dot-0"></div>
+            <div class="dot" id="dot-1"></div>
+            <div class="dot" id="dot-2"></div>
+            <div class="dot" id="dot-3"></div>
+          </div>
+          <button class="btn btn-outline" style="height:36px; padding:0 12px" onclick="nextOnboardingPage()" id="btn-next-onboard">NEXT →</button>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: HOME DASHBOARD -->
+      <div class="screen" id="scr-home">
+        <div class="topbar">
+          <div>
+            <div class="topbar-title" id="home-greeting">Hello, Sandeep!👋</div>
+            <div class="topbar-sub">Mon, 15 June</div>
+          </div>
+          <div class="topbar-actions">
+            <button class="icon-btn" onclick="navigateTo('scr-templates')" title="Quick Templates">
+              <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+            </button>
+            <button class="icon-btn" onclick="navigateTo('scr-settings')" title="Settings">
+              <svg viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="opt-banner" id="home-opt-alert" onclick="resolveOptimization()" style="display:none">
+          <span class="opt-banner-icon">⚠️</span>
+          <div class="opt-banner-text">
+            <div class="opt-banner-title">Battery Optimizations Active</div>
+            <div class="opt-banner-desc">EchoCare alarms might be delayed in background. Tap to whitelist.</div>
+          </div>
+        </div>
+
+        <div class="stats-banner">
+          <div>
+            <div class="stats-num" id="stats-count">2</div>
+            <div class="stats-lbl">Active Reminders</div>
+          </div>
+          <span style="font-size:24px">🔔</span>
+        </div>
+
+        <div class="reminder-list" id="home-reminders-feed">
+          <!-- List renders dynamically -->
+        </div>
+
+        <button class="fab" onclick="openVoiceMic()"><svg viewBox="0 0 24 24"><path d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg></button>
+      </div>
+
+      <!-- SCREEN 3: TEMPLATES -->
+      <div class="screen" id="scr-templates">
+        <div class="topbar">
+          <button class="icon-btn" onclick="navigateTo('scr-home')">
+            <svg viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+          </button>
+          <div class="topbar-title" style="flex:1; margin-left:12px">Quick Templates</div>
+        </div>
+        <div class="settings-body" style="gap:12px">
+          <p style="font-size:11.5px; color:var(--text2)">Tap a card to parse and schedule it instantly.</p>
+          
+          <div class="rem-card" style="cursor:pointer; padding:14px; background:rgba(139,92,246,0.06)" onclick="selectTemplate('Tell Papa to take his BP medicine every day at 8 PM')">
+            <div class="rem-info">
+              <span style="font-size:20px; float:left; margin-right:12px">💊</span>
+              <div class="rem-title">BP Medicine (Papa)</div>
+              <div style="font-size:10px; color:var(--primary); font-weight:700">"Tell Papa to take his BP medicine every day at 8 PM"</div>
+            </div>
+          </div>
+
+          <div class="rem-card" style="cursor:pointer; padding:14px; background:rgba(34,211,238,0.06)" onclick="selectTemplate('Remind me to drink water every 2 hours')">
+            <div class="rem-info">
+              <span style="font-size:20px; float:left; margin-right:12px">💧</span>
+              <div class="rem-title">Drink Water (Self)</div>
+              <div style="font-size:10px; color:var(--primary); font-weight:700">"Remind me to drink water every 2 hours"</div>
+            </div>
+          </div>
+
+          <div class="rem-card" style="cursor:pointer; padding:14px; background:rgba(251,191,36,0.06)" onclick="selectTemplate('Remind me to walk for 15 minutes in 1 hour')">
+            <div class="rem-info">
+              <span style="font-size:20px; float:left; margin-right:12px">🏃</span>
+              <div class="rem-title">Stretch Break (Self)</div>
+              <div style="font-size:10px; color:var(--primary); font-weight:700">"Remind me to walk for 15 minutes in 1 hour"</div>
+            </div>
+          </div>
+
+          <div class="rem-card" style="cursor:pointer; padding:14px; background:rgba(16,185,129,0.06)" onclick="selectTemplate('Tell Papa doctor checkup tomorrow at 11 AM')">
+            <div class="rem-info">
+              <span style="font-size:20px; float:left; margin-right:12px">🩺</span>
+              <div class="rem-title">Doctor Visit (Papa)</div>
+              <div style="font-size:10px; color:var(--primary); font-weight:700">"Tell Papa doctor checkup tomorrow at 11 AM"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 4: SETTINGS -->
+      <div class="screen" id="scr-settings">
+        <div class="topbar">
+          <button class="icon-btn" onclick="navigateTo('scr-home')">
+            <svg viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+          </button>
+          <div class="topbar-title" style="flex:1; margin-left:12px">Settings</div>
+        </div>
+
+        <div class="settings-body">
+          <!-- Premium Membership Info -->
+          <div id="premium-settings-banner">
+            <!-- Rendered Dynamically -->
+          </div>
+
+          <!-- Profile settings -->
+          <div class="settings-section">
+            <span class="settings-sec-title">Profile Settings</span>
+            <div class="settings-sec-card">
+              <div class="input-wrap">
+                <label style="font-size:9.5px; font-weight:700; color:var(--text2)">Your Profile Name</label>
+                <input class="settings-text-input" id="profile-name-input" type="text" oninput="updateProfileName(this.value)" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Voice Defaults -->
+          <div class="settings-section">
+            <span class="settings-sec-title">Voice & Defaults</span>
+            <div class="settings-sec-card">
+              <div>
+                <div class="settings-row"><span class="settings-row-label">TTS Language</span></div>
+                <div class="chip-row">
+                  <button class="chip active" id="c-lang-en" onclick="setTtsLang('en')">🇬🇧 EN</button>
+                  <button class="chip" id="c-lang-hi" onclick="setTtsLang('hi')">🇮🇳 HI</button>
+                  <button class="chip" id="c-lang-mr" onclick="setTtsLang('mr')">🇮🇳 MR</button>
+                  <button class="chip" id="c-lang-ta" onclick="setTtsLang('ta')">🇮🇳 TA</button>
+                  <button class="chip" id="c-lang-te" onclick="setTtsLang('te')">🇮🇳 TE</button>
+                  <button class="chip" id="c-lang-bn" onclick="setTtsLang('bn')">🇮🇳 BN</button>
+                  <button class="chip" id="c-lang-kn" onclick="setTtsLang('kn')">🇮🇳 KN</button>
+                </div>
+              </div>
+              <hr style="border:0; border-top:1px solid rgba(255,255,255,0.04)" />
+              <div>
+                <div class="settings-row"><span class="settings-row-label" id="val-pitch">Speech Pitch: 1.0x</span></div>
+                <input class="slider" type="range" min="5" max="20" value="10" oninput="updateSpeechPitch(this.value)" />
+              </div>
+              <hr style="border:0; border-top:1px solid rgba(255,255,255,0.04)" />
+              <div>
+                <div class="settings-row"><span class="settings-row-label" id="val-speed">Speech Speed: 1.0x</span></div>
+                <input class="slider" type="range" min="5" max="20" value="10" oninput="updateSpeechSpeed(this.value)" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Voice Cloning (PREMIUM) -->
+          <div class="settings-section">
+            <span class="settings-sec-title">AI Voice Cloning</span>
+            <div class="settings-sec-card">
+              <div class="settings-row">
+                <div class="settings-row-info">
+                  <div class="settings-row-label">AI Voice Calibration</div>
+                  <div class="settings-row-sub" id="voice-cloning-sub">Clone your voice for shared alerts (Premium)</div>
+                </div>
+                <button class="chip" id="btn-voice-clone" onclick="triggerCloningFlow()">Unlock 👑</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Smart Integrations (PREMIUM) -->
+          <div class="settings-section">
+            <span class="settings-sec-title">Smart Home Sync</span>
+            <div class="settings-sec-card">
+              <div class="settings-row">
+                <div class="settings-row-info">
+                  <div class="settings-row-label">Amazon Alexa Skill</div>
+                  <div class="settings-row-sub">Sync shared alerts to echo speakers</div>
+                </div>
+                <button class="toggle off" id="toggle-alexa" onclick="toggleSmartLink('alexa')"></button>
+              </div>
+              <hr style="border:0; border-top:1px solid rgba(255,255,255,0.04)" />
+              <div class="settings-row">
+                <div class="settings-row-info">
+                  <div class="settings-row-label">Google Nest Assistant</div>
+                  <div class="settings-row-sub">Sync shared alerts to google hubs</div>
+                </div>
+                <button class="toggle off" id="toggle-google" onclick="toggleSmartLink('google')"></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Backup & Restore (PREMIUM) -->
+          <div class="settings-section">
+            <span class="settings-sec-title">Backup & Restore</span>
+            <div class="settings-sec-card">
+              <div class="settings-row">
+                <div class="settings-row-info">
+                  <div class="settings-row-label">Backup Reminders</div>
+                  <div class="settings-row-sub">Export reminders cache to local JSON</div>
+                </div>
+                <button class="chip" id="btn-backup-export" onclick="triggerBackupAction('export')">Export</button>
+              </div>
+              <hr style="border:0; border-top:1px solid rgba(255,255,255,0.04)" />
+              <div class="settings-row">
+                <div class="settings-row-info">
+                  <div class="settings-row-label">Restore Reminders</div>
+                  <div class="settings-row-sub">Import reminders from backup file</div>
+                </div>
+                <button class="chip" id="btn-backup-import" onclick="triggerBackupAction('import')">Import</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Security settings -->
+          <div class="settings-section">
+            <span class="settings-sec-title">Security & System</span>
+            <div class="settings-sec-card">
+              <div class="settings-row">
+                <div class="settings-row-info">
+                  <div class="settings-row-label">Biometric Unlock</div>
+                  <div class="settings-row-sub">Prompt fingerprint lock on launch</div>
+                </div>
+                <button class="toggle off" id="toggle-biometric" onclick="toggleBiometricState()"></button>
+              </div>
+              <hr style="border:0; border-top:1px solid rgba(255,255,255,0.04)" />
+              <div class="settings-row">
+                <div class="settings-row-info">
+                  <div class="settings-row-label">Battery Optimization</div>
+                  <div class="settings-row-sub" id="settings-battery-sub">Bypass sleep cycles for timely alarms</div>
+                </div>
+                <button class="chip" id="settings-battery-btn" onclick="resolveOptimization()">Configure</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Diagnostics -->
+          <div class="settings-section">
+            <span class="settings-sec-title">Closed Beta Diagnostics</span>
+            <div class="settings-sec-card">
+              <div class="settings-row" onclick="openTelemetryLogsModal()" style="cursor:pointer">
+                <div class="settings-row-info">
+                  <div class="settings-row-label">Diagnostics Log Viewer</div>
+                  <div class="settings-row-sub">Inspect local telemetry event stream</div>
+                </div>
+                <span style="font-size:12px; color:var(--primary)">➔</span>
+              </div>
+              <hr style="border:0; border-top:1px solid rgba(255,255,255,0.04)" />
+              <div class="settings-row" onclick="triggerHandledException()" style="cursor:pointer">
+                <div class="settings-row-info">
+                  <div class="settings-row-label">Simulate Non-Fatal Crash</div>
+                  <div class="settings-row-sub">Log handled exception trace to buffer</div>
+                </div>
+                <span style="font-size:12px; color:var(--amber)">➔</span>
+              </div>
+              <hr style="border:0; border-top:1px solid rgba(255,255,255,0.04)" />
+              <div class="settings-row" onclick="triggerFatalCrash()" style="cursor:pointer">
+                <div class="settings-row-info">
+                  <div class="settings-row-label" style="color:var(--error)">Simulate Fatal Crash</div>
+                  <div class="settings-row-sub">Force crash the application thread</div>
+                </div>
+                <span style="font-size:12px; color:var(--error)">➔</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 5: VOICE MIC -->
+      <div class="voice-box" id="scr-voice">
+        <h3 class="topbar-title" style="color:var(--primary)">Listening...</h3>
+        <p style="font-size:11px; color:var(--text2)">State your voice command</p>
+        <div class="wave-container">
+          <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        </div>
+        <div class="transcript-card" id="voice-transcript">
+          <span style="color:var(--text2); font-style:italic">"Remind Papa to take his pills at 8 PM..."</span>
+        </div>
+        <button class="btn btn-outline btn-block" onclick="closeVoiceMic()">Cancel</button>
+      </div>
+
+    </div><!-- /screens -->
+
+    <!-- Telemetry dialog -->
+    <div class="phone-dialog" id="telemetry-logs-modal">
+      <div class="dialog-card">
+        <div class="dialog-hdr">
+          <span class="dialog-title">Telemetry Diagnostics</span>
+          <span style="cursor:pointer" onclick="closeTelemetryLogsModal()">✕</span>
+        </div>
+        <div class="dialog-body" id="telemetry-dialog-list"></div>
+        <div style="padding:10px; display:flex; gap:8px">
+          <button class="btn btn-outline btn-block" style="height:32px" onclick="clearTelemetryLogs()">Clear</button>
+          <button class="btn btn-primary btn-block" style="height:32px" onclick="closeTelemetryLogsModal()">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voice Calibration Dialog -->
+    <div class="phone-dialog" id="voice-calibration-modal">
+      <div class="dialog-card">
+        <div class="dialog-hdr">
+          <span class="dialog-title">AI Voice Cloning Setup</span>
+          <span style="cursor:pointer" onclick="closeVoiceCalibrationModal()">✕</span>
+        </div>
+        <div class="dialog-body" style="gap:12px; text-align:center">
+          <p style="font-size:11px; color:var(--text2)" id="calibration-step-title">Phrase 1 of 3: Read phrase aloud to calibrate cloning algorithm.</p>
+          <div style="background:var(--surfvar); border-radius:12px; padding:16px; font-weight:800; font-size:13px; color:var(--primary)" id="calibration-phrase">
+            "Hello Papa, this is Sandeep. Just checking in on you."
+          </div>
+          <div class="wave-container" style="justify-content:center; margin:10px 0" id="calibration-wave">
+            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+          </div>
+        </div>
+        <div style="padding:10px; display:flex; gap:8px">
+          <button class="btn btn-outline btn-block" style="height:32px" onclick="closeVoiceCalibrationModal()">Cancel</button>
+          <button class="btn btn-primary btn-block" style="height:32px" onclick="advanceCalibration()" id="btn-calibration-action">Record Phrase</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Nav Bar -->
+    <div class="bottom-nav" id="phone-nav" style="display:none">
+      <div class="nav-item active" id="nav-home" onclick="navigateTo('scr-home')">
+        <svg viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+        Home
+      </div>
+      <div class="nav-item" id="nav-settings" onclick="navigateTo('scr-settings')">
+        <svg viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        Settings
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       RIGHT PANEL: DEVELOPER CONSOLE & LOGCAT
+  =========================================== -->
+  <div class="debug-panel">
+    <div class="panel-hdr">
+      <div class="panel-title">
+        <span>📟</span> EchoCare Console Logcat
+      </div>
+      <span style="font-size:10px; font-weight:800; background:rgba(251,191,36,0.15); color:var(--amber); padding:2px 8px; border-radius:6px">RELEASE SUITE FEED</span>
+    </div>
+    
+    <div class="logcat-console" id="logcat-stream">
+      <!-- Live Console Logs appear here -->
+    </div>
+
+    <div class="control-box">
+      <button class="btn btn-outline" style="flex:1" onclick="resetOnboardingState()">Reset Profile / Tour</button>
+      <button class="btn btn-secondary" style="flex:1" onclick="simulateAppSleepLock()">Simulate App Sleep Lock</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Javascript Logic Control ────────────────────────────────────── -->
+<script>
+  let onboardPageIndex = 0;
+  let hasMic = false;
+  let hasNotif = false;
+  let hasAlarm = false;
+  let hasBattery = false;
+  
+  let isPremium = false;
+  let userName = "";
+  let ttsLang = "en";
+  let ttsSpeed = 1.0;
+  let ttsPitch = 1.0;
+  let biometricEnabled = false;
+  let alexaLinked = false;
+  let googleLinked = false;
+
+  let activeReminders = [
+    { id: 101, title: "Stretch & Walk Break", phrase: "Remind me to walk for 15 minutes in 1 hour", time: "⏰ In 1 hour (Self)", isActive: true },
+    { id: 102, title: "Papa's BP Medicine", phrase: "Tell Papa to take his BP medicine every day at 8 PM", time: "⏰ Every day at 8:00 PM (Papa's Device)", isActive: true }
+  ];
+
+  const logsBuffer = [];
+  const calibrationPhrases = [
+    "Hello Papa, this is Sandeep. Just checking in on you.",
+    "Remember to drink water and take your daily walk.",
+    "Your health is important to us. Please take your medicine now."
+  ];
+  let currentCalibrationStep = 0;
+
+  function logEvent(name, params = {}) {
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 23);
+    logsBuffer.unshift({ timestamp, eventName: name, details: params });
+    if (logsBuffer.length > 50) logsBuffer.pop();
+
+    const consoleEl = document.getElementById("logcat-stream");
+    if (consoleEl) {
+      const line = document.createElement("div");
+      line.className = "logcat-line";
+      const paramStr = Object.keys(params).length > 0 ? ` -> <span class="logcat-param">${JSON.stringify(params)}</span>` : "";
+      line.innerHTML = `[${timestamp.substring(11)}] <span class="logcat-tag">EchoCareTelemetry:</span> <span class="logcat-event">${name}</span>${paramStr}`;
+      consoleEl.appendChild(line);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+  }
+
+  function logException(errStr, fatal = false) {
+    const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 23);
+    logsBuffer.unshift({ timestamp, eventName: fatal ? "FATAL_CRASH" : "HANDLED_EXCEPTION", details: { error: errStr } });
+
+    const consoleEl = document.getElementById("logcat-stream");
+    if (consoleEl) {
+      const line = document.createElement("div");
+      line.className = "logcat-line";
+      const colorClass = fatal ? "logcat-error" : "logcat-warn";
+      line.innerHTML = `[${timestamp.substring(11)}] <span class="logcat-tag ${colorClass}">CRITICAL:</span> <span class="${colorClass}">${errStr}</span>`;
+      consoleEl.appendChild(line);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+  }
+
+  window.onload = function() {
+    logEvent("auth_viewmodel_initialized", { onboarded: false, premium: false });
+    logEvent("onboarding_entered");
+    renderRemindersFeed();
+    updatePremiumUI();
+  };
+
+  // Onboarding Slides
+  function updateOnboardingSlides() {
+    for (let i = 0; i <= 3; i++) {
+      document.getElementById(`slide-${i}`).style.display = "none";
+      document.getElementById(`dot-${i}`).classList.remove("active");
+    }
+    document.getElementById(`slide-${onboardPageIndex}`).style.display = "block";
+    document.getElementById(`dot-${onboardPageIndex}`).classList.add("active");
+
+    const nextBtn = document.getElementById("btn-next-onboard");
+    if (onboardPageIndex === 3) nextBtn.innerHTML = "FINISH ✓";
+    else nextBtn.innerHTML = "NEXT →";
+  }
+
+  function nextOnboardingPage() {
+    if (onboardPageIndex < 3) {
+      onboardPageIndex++;
+      updateOnboardingSlides();
+      logEvent("onboarding_slide_transition", { index: onboardPageIndex });
+    } else {
+      userName = document.getElementById("onboard-name-input").value.trim() || "Sandeep";
+      logEvent("user_onboarded", { name: userName });
+      logEvent("onboarding_completed");
+
+      document.getElementById("home-greeting").innerHTML = `Hello, ${userName}!👋`;
+      document.getElementById("profile-name-input").value = userName;
+      
+      navigateTo("scr-home");
+      document.getElementById("phone-nav").style.display = "flex";
+      speakTts(`Profile initialized. Welcome back, ${userName}!`);
+      toggleBatteryBanner();
+    }
+  }
+
+  function grantOnboardPermissions() {
+    hasMic = hasNotif = hasAlarm = hasBattery = true;
+    document.querySelectorAll(".perm-status").forEach(el => {
+      el.innerHTML = "✓";
+      el.className = "perm-status granted";
+    });
+    logEvent("permission_requested", { permission: "android.permission.RECORD_AUDIO", granted: true });
+    logEvent("permission_requested", { permission: "android.permission.POST_NOTIFICATIONS", granted: true });
+    logEvent("permission_requested", { permission: "android.permission.SCHEDULE_EXACT_ALARM", granted: true });
+    logEvent("battery_whitelist_configured", { bypassed: true });
+    
+    const btn = document.getElementById("btn-grant-onboard");
+    btn.innerHTML = "All Permissions Whitelisted ✓";
+    btn.className = "btn btn-outline btn-block";
+    btn.disabled = true;
+
+    document.getElementById("settings-battery-sub").innerHTML = "App is whitelisted";
+    document.getElementById("settings-battery-btn").innerHTML = "Whitelisted";
+    document.getElementById("settings-battery-btn").className = "chip active";
+  }
+
+  // Navigation
+  function navigateTo(screenId) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+    const target = document.getElementById(screenId);
+    if (target) target.classList.add("active");
+
+    document.getElementById("nav-home").classList.remove("active");
+    document.getElementById("nav-settings").classList.remove("active");
+
+    if (screenId === "scr-home") {
+      document.getElementById("nav-home").classList.add("active");
+      toggleBatteryBanner();
+    } else if (screenId === "scr-settings") {
+      document.getElementById("nav-settings").classList.add("active");
+    }
+    logEvent("screen_navigation_changed", { screen: screenId });
+  }
+
+  function toggleBatteryBanner() {
+    const banner = document.getElementById("home-opt-alert");
+    banner.style.display = hasBattery ? "none" : "flex";
+  }
+
+  function resolveOptimization() {
+    hasBattery = true;
+    logEvent("battery_whitelist_configured", { bypassed: true });
+    toggleBatteryBanner();
+    
+    document.getElementById("settings-battery-sub").innerHTML = "App is whitelisted";
+    document.getElementById("settings-battery-btn").innerHTML = "Whitelisted";
+    document.getElementById("settings-battery-btn").className = "chip active";
+
+    speakTts("Battery optimizations bypassed.");
+  }
+
+  // Dashboard feed
+  function renderRemindersFeed() {
+    const feed = document.getElementById("home-reminders-feed");
+    feed.innerHTML = `<div class="list-hdr">Active Reminders</div>`;
+    
+    if (activeReminders.length === 0) {
+      feed.innerHTML += `
+        <div class="empty-state" style="text-align:center; padding:20px; font-size:12px; color:var(--text2)">
+          <span style="font-size:32px">💤</span><p>No active reminders.</p>
+        </div>`;
+    } else {
+      activeReminders.forEach(r => {
+        const card = document.createElement("div");
+        card.className = "rem-card";
+        card.innerHTML = `
+          <div class="rem-info">
+            <div class="rem-title">${r.title}</div>
+            <div class="rem-desc">${r.phrase}</div>
+            <div class="rem-time">${r.time}</div>
+          </div>
+          <button class="toggle ${r.isActive ? 'on' : 'off'}" onclick="toggleReminderState(${r.id})"></button>
+        `;
+        feed.appendChild(card);
+      });
+    }
+    document.getElementById("stats-count").innerHTML = activeReminders.filter(r => r.isActive).length;
+  }
+
+  function toggleReminderState(id) {
+    const r = activeReminders.find(item => item.id === id);
+    if (r) {
+      r.isActive = !r.isActive;
+      logEvent("reminder_active_status_toggled", { id, isActive: r.isActive });
+      renderRemindersFeed();
+    }
+  }
+
+  // Settings configs
+  function updateProfileName(name) {
+    userName = name || "Sandeep";
+    document.getElementById("home-greeting").innerHTML = `Hello, ${userName}!👋`;
+    logEvent("profile_name_updated", { userName });
+  }
+
+  function setTtsLang(lang) {
+    ttsLang = lang;
+    document.querySelectorAll(".chip-row button").forEach(btn => btn.classList.remove("active"));
+    document.getElementById(`c-lang-${lang}`).classList.add("active");
+    logEvent("tts_language_changed", { language: lang });
+  }
+
+  function updateSpeechPitch(val) {
+    ttsPitch = (val / 10).toFixed(1);
+    document.getElementById("val-pitch").innerHTML = `Speech Pitch: ${ttsPitch}x`;
+    logEvent("tts_pitch_changed", { pitch: ttsPitch });
+  }
+
+  function updateSpeechSpeed(val) {
+    ttsSpeed = (val / 10).toFixed(1);
+    document.getElementById("val-speed").innerHTML = `Speech Speed: ${ttsSpeed}x`;
+    logEvent("tts_speed_changed", { speed: ttsSpeed });
+  }
+
+  function toggleBiometricState() {
+    biometricEnabled = !biometricEnabled;
+    document.getElementById("toggle-biometric").className = biometricEnabled ? "toggle on" : "toggle off";
+    logEvent("biometric_settings_changed", { enabled: biometricEnabled });
+  }
+
+  // Biometric overlay
+  function attemptUnlock() {
+    const scanner = document.getElementById("lock-scanner");
+    scanner.classList.add("scanning");
+    logEvent("biometric_prompt_requested");
+    setTimeout(() => {
+      scanner.classList.remove("scanning");
+      document.getElementById("lock-screen").classList.remove("active");
+      logEvent("biometric_auth_success");
+      speakTts("Welcome back. EchoCare unlocked.");
+    }, 1200);
+  }
+
+  function simulateAppSleepLock() {
+    if (!userName) {
+      alert("Complete onboarding first!");
+      return;
+    }
+    logEvent("app_locked_on_stop");
+    if (biometricEnabled) {
+      document.getElementById("lock-screen").classList.add("active");
+    } else {
+      logEvent("app_restored_unlocked", { biometric: false });
+      speakTts("App brought to foreground");
+    }
+  }
+
+  // Templates
+  function selectTemplate(phrase) {
+    logEvent("template_clicked", { phrase });
+    navigateTo("scr-home");
+    speakTts("Parsing quick template...");
+    
+    setTimeout(() => {
+      alert(`🤖 Quick Template Parsed Successfully:\n"${phrase}"\nSchedules alarm locally and pushes to Caregiver cloud database!`);
+      const item = {
+        id: Date.now(),
+        title: phrase.includes("BP") ? "BP Medicine (Papa)" : (phrase.includes("water") ? "Drink Water" : "Activity Alarm"),
+        phrase: phrase,
+        time: phrase.includes("BP") ? "⏰ Daily at 8:00 PM" : (phrase.includes("water") ? "⏰ Custom recurring" : "⏰ In 1 hour"),
+        isActive: true
+      };
+      activeReminders.unshift(item);
+      logEvent("reminder_scheduled_from_template", { phrase });
+      renderRemindersFeed();
+    }, 1000);
+  }
+
+  // Paywall & Subscriptions
+  function openPaywall() {
+    document.getElementById("paywall-screen").classList.add("active");
+    logEvent("paywall_screen_entered");
+  }
+
+  function closePaywall() {
+    document.getElementById("paywall-screen").classList.remove("active");
+    logEvent("paywall_screen_dismissed");
+  }
+
+  function selectSubTier(el) {
+    document.querySelectorAll(".paywall-plan-card").forEach(c => c.classList.remove("active"));
+    el.classList.add("active");
+  }
+
+  function completePremiumPurchase() {
+    const cc = document.getElementById("cc-number").value.trim();
+    if (cc.length < 10) {
+      alert("Please enter a valid mock card number to complete transaction.");
+      return;
+    }
+    isPremium = true;
+    logEvent("paywall_purchase_completed", { card: "Visa/MC *4111", unlocked: true });
+    closePaywall();
+    updatePremiumUI();
+    speakTts("EchoCare Premium Active. Thank you for subscribing.");
+  }
+
+  function updatePremiumUI() {
+    const bannerContainer = document.getElementById("premium-settings-banner");
+    const cloneSub = document.getElementById("voice-cloning-sub");
+    const cloneBtn = document.getElementById("btn-voice-clone");
+    const alexaToggle = document.getElementById("toggle-alexa");
+    const googleToggle = document.getElementById("toggle-google");
+
+    if (isPremium) {
+      bannerContainer.innerHTML = `
+        <div style="background:rgba(251,191,36,0.1); border:1.5px solid var(--amber); border-radius:16px; padding:12px; margin-bottom:8px">
+          <div style="display:flex; align-items:center; gap:8px">
+            <span style="font-size:22px">✨</span>
+            <div>
+              <div style="font-size:12.5px; font-weight:800; color:var(--amber)">EchoCare Premium Active</div>
+              <div style="font-size:9.5px; color:var(--text2)">Access voice cloning and smart integrations</div>
+            </div>
+          </div>
+        </div>`;
+      
+      cloneSub.innerHTML = "Model is ready for custom recordings";
+      cloneBtn.innerHTML = "Configure";
+      cloneBtn.className = "chip active";
+    } else {
+      bannerContainer.innerHTML = `
+        <div style="background:rgba(139,92,246,0.1); border:1.5px solid var(--primary); border-radius:16px; padding:12px; margin-bottom:8px; cursor:pointer" onclick="openPaywall()">
+          <div style="display:flex; align-items:center; justify-content:space-between">
+            <div style="display:flex; align-items:center; gap:8px">
+              <span style="font-size:22px">👑</span>
+              <div>
+                <div style="font-size:12.5px; font-weight:800">Upgrade to Premium</div>
+                <div style="font-size:9.5px; color:var(--text2)">Voice cloning, integrations & backups</div>
+              </div>
+            </div>
+            <button class="chip" style="font-weight:800" onclick="openPaywall()">Get</button>
+          </div>
+        </div>`;
+      
+      cloneSub.innerHTML = "Clone your voice for shared alerts (Premium)";
+      cloneBtn.innerHTML = "Unlock 👑";
+      cloneBtn.className = "chip";
+
+      alexaToggle.className = "toggle off";
+      googleToggle.className = "toggle off";
+    }
+  }
+
+  // Premium protected features triggers
+  function triggerCloningFlow() {
+    if (!isPremium) {
+      openPaywall();
+    } else {
+      currentCalibrationStep = 0;
+      showVoiceCalibrationModal();
+    }
+  }
+
+  function showVoiceCalibrationModal() {
+    document.getElementById("calibration-step-title").innerHTML = `Phrase 1 of 3: Read phrase aloud to calibrate cloning algorithm.`;
+    document.getElementById("calibration-phrase").innerHTML = `"${calibrationPhrases[0]}"`;
+    document.getElementById("btn-calibration-action").innerHTML = "Record Phrase";
+    document.getElementById("voice-calibration-modal").classList.add("active");
+    logEvent("voice_calibration_screen_entered");
+  }
+
+  function closeVoiceCalibrationModal() {
+    document.getElementById("voice-calibration-modal").classList.remove("active");
+  }
+
+  function advanceCalibration() {
+    currentCalibrationStep++;
+    if (currentCalibrationStep < 3) {
+      document.getElementById("calibration-step-title").innerHTML = `Phrase ${currentCalibrationStep + 1} of 3: Read phrase aloud.`;
+      document.getElementById("calibration-phrase").innerHTML = `"${calibrationPhrases[currentCalibrationStep]}"`;
+      if (currentCalibrationStep === 2) {
+        document.getElementById("btn-calibration-action").innerHTML = "Complete Calibration";
+      }
+      logEvent("voice_calibration_prompt_advanced", { step: currentCalibrationStep + 1 });
+    } else {
+      closeVoiceCalibrationModal();
+      alert("🎙️ AI Voice Model Configured!\nYour shared reminders will now announce using your custom voice clone.");
+      logEvent("voice_cloning_calibrated");
+    }
+  }
+
+  function toggleSmartLink(device) {
+    if (!isPremium) {
+      openPaywall();
+    } else {
+      if (device === 'alexa') {
+        alexaLinked = !alexaLinked;
+        document.getElementById("toggle-alexa").className = alexaLinked ? "toggle on" : "toggle off";
+        logEvent("smart_link_state_changed", { service: "alexa", linked: alexaLinked });
+      } else {
+        googleLinked = !googleLinked;
+        document.getElementById("toggle-google").className = googleLinked ? "toggle on" : "toggle off";
+        logEvent("smart_link_state_changed", { service: "google_home", linked: googleLinked });
+      }
+    }
+  }
+
+  function triggerBackupAction(action) {
+    if (!isPremium) {
+      openPaywall();
+      return;
+    }
+    if (action === 'export') {
+      logEvent("database_backup_exported", { count: activeReminders.length, filename: "echocare_backup.json" });
+      alert("💾 JSON Backup file compiled and saved to local app documents space successfully!");
+    } else {
+      logEvent("database_backup_imported", { count: 3 });
+      alert("📂 Reminders restored successfully from JSON backup file. Refreshing list feeds.");
+      activeReminders.push({ id: 105, title: "Hydration Check", phrase: "Remind me to drink water every 2 hours", time: "⏰ Recurring hourly", isActive: true });
+      renderRemindersFeed();
+    }
+  }
+
+  // Voice Mic
+  function openVoiceMic() {
+    document.getElementById("scr-voice").classList.add("active");
+    logEvent("speech_recognizer_started", { language: ttsLang });
+    setTimeout(() => {
+      document.getElementById("voice-transcript").innerHTML = `<span>"Tell Papa to take medicine every day at 8 PM"</span>`;
+      logEvent("speech_recognized", { transcript: "Tell Papa to take medicine every day at 8 PM" });
+    }, 2000);
+    setTimeout(() => {
+      closeVoiceMic();
+      alert("🎙️ Parsed spoken phrase scheduled successfully!");
+      const item = { id: Date.now(), title: "Papa's BP Medicine", phrase: "Tell Papa to take his BP medicine every day at 8 PM", time: "⏰ Daily at 8:00 PM (Papa's Phone)", isActive: true };
+      activeReminders.unshift(item);
+      logEvent("reminder_scheduled_remotely", { recipient: "Papa", message: "Take BP medicine" });
+      renderRemindersFeed();
+    }, 4000);
+  }
+
+  function closeVoiceMic() {
+    document.getElementById("scr-voice").classList.remove("active");
+    document.getElementById("voice-transcript").innerHTML = `<span style="color:var(--text2); font-style:italic">"Remind Papa to take his pills at 8 PM..."</span>`;
+  }
+
+  // Local logs dialog inside phone
+  function openTelemetryLogsModal() {
+    logEvent("telemetry_log_dialog_entered");
+    const container = document.getElementById("telemetry-dialog-list");
+    container.innerHTML = "";
+    if (logsBuffer.length === 0) {
+      container.innerHTML = `<p style="font-size:11px; text-align:center; color:var(--text2)">No events recorded yet.</p>`;
+    } else {
+      logsBuffer.forEach(log => {
+        container.innerHTML += `
+          <div class="dialog-log-item">
+            <div class="dialog-log-row"><span>${log.eventName}</span><span style="color:var(--text2)">${log.timestamp.substring(11)}</span></div>
+            <div style="font-size:8.5px; color:#aaa">${JSON.stringify(log.details)}</div>
+          </div>`;
+      });
+    }
+    document.getElementById("telemetry-logs-modal").classList.add("active");
+  }
+
+  function closeTelemetryLogsModal() { document.getElementById("telemetry-logs-modal").classList.remove("active"); }
+  function clearTelemetryLogs() { logsBuffer.length = 0; logEvent("diagnostics_logs_cleared"); closeTelemetryLogsModal(); }
+
+  // Exception simulations
+  function triggerHandledException() {
+    logException("Simulated Non-Fatal Exception: SQLiteIOError during transactional replication sync cache refresh block", false);
+    alert("🤖 Handled mock exception stored in local telemetry streams successfully. Review Logcat console feed!");
+  }
+
+  function triggerFatalCrash() {
+    logException("FATAL CRASH: NullPointerException at com.echocare.app.alarm.AlarmScheduler.cancelAll(AlarmScheduler.kt:142)", true);
+    document.getElementById("crash-stack-trace").innerHTML = `
+Fatal Exception: java.lang.NullPointerException: Attempt to invoke virtual method 'void android.app.AlarmManager.cancel(android.app.PendingIntent)' on a null object reference
+  at com.echocare.app.alarm.AlarmScheduler.cancelAll(AlarmScheduler.kt:142)
+  at com.echocare.app.ui.screens.settings.SettingsViewModel.triggerFatalCrash(SettingsViewModel.kt:42)
+  at com.echocare.app.ui.screens.settings.SettingsScreenKt.SettingsScreen(SettingsScreen.kt:190)
+  at com.echocare.app.ui.navigation.NavGraphKt.NavGraph(NavGraph.kt:76)
+    `;
+    document.getElementById("crash-screen").classList.add("active");
+  }
+
+  function recoverFromCrash() {
+    document.getElementById("crash-screen").classList.remove("active");
+    logEvent("auth_viewmodel_initialized", { onboarded: true, premium: isPremium });
+    logEvent("app_recovered_from_crash");
+    navigateTo("scr-home");
+  }
+
+  function resetOnboardingState() {
+    onboardPageIndex = 0;
+    hasMic = hasNotif = hasAlarm = hasBattery = false;
+    isPremium = false;
+    userName = "";
+    biometricEnabled = alexaLinked = googleLinked = false;
+
+    document.getElementById("onboard-name-input").value = "";
+    document.getElementById("profile-name-input").value = "";
+    
+    document.getElementById("btn-grant-onboard").innerHTML = "Configure System Permissions";
+    document.getElementById("btn-grant-onboard").className = "btn btn-primary btn-block";
+    document.getElementById("btn-grant-onboard").disabled = false;
+
+    document.querySelectorAll(".perm-status").forEach(el => {
+      el.innerHTML = "✗"; el.className = "perm-status";
+    });
+
+    document.getElementById("settings-battery-sub").innerHTML = "Bypass sleep cycles for timely alarms";
+    document.getElementById("settings-battery-btn").innerHTML = "Configure";
+    document.getElementById("settings-battery-btn").className = "chip";
+    document.getElementById("toggle-biometric").className = "toggle off";
+
+    document.getElementById("phone-nav").style.display = "none";
+    document.getElementById("lock-screen").classList.remove("active");
+    closePaywall();
+    updatePremiumUI();
+    updateOnboardingSlides();
+    navigateTo("scr-onboarding");
+    logEvent("onboarding_entered");
+  }
+
+  function speakTts(text) {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = ttsLang === 'hi' ? 'hi-IN' : 'en-US';
+      utterance.rate = ttsSpeed;
+      utterance.pitch = ttsPitch;
+      window.speechSynthesis.speak(utterance);
+    }
+  }
+</script>
+</body>
+</html>
