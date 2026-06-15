@@ -1,0 +1,25 @@
+# Android build & IDE outputs
+.gradle/
+build/
+app/build/
+local.properties
+*.jks
+*.keystore
+.idea/
+*.iml
+*.apk
+*.aab
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Node.js backend
+node_modules/
+.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System files
+.DS_Store
+Thumbs.db
