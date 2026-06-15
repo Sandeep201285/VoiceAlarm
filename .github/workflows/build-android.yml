@@ -23,20 +23,15 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/*.gradle.kts') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
+          gradle-version: 8.2
 
       - name: Generate Gradle Wrapper
         run: |
           cd EchoCare
-          gradle wrapper --gradle-version 8.2
+          gradle wrapper
 
       - name: Make Gradle Wrapper Executable
         run: chmod +x ./EchoCare/gradlew
