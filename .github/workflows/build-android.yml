@@ -32,6 +32,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
+      - name: Generate Gradle Wrapper
+        run: |
+          cd EchoCare
+          gradle wrapper --gradle-version 8.2
+
       - name: Make Gradle Wrapper Executable
         run: chmod +x ./EchoCare/gradlew
         continue-on-error: true # Falls back if project uses system gradle
