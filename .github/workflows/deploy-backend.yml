@@ -22,6 +22,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Validate GCP Secrets
+        run: |
+          if [ -z "${{ secrets.GCP_PROJECT_ID }}" ]; then
+            echo "::error::GCP_PROJECT_ID secret is missing. Please add it to your GitHub Repository Secrets."
+            exit 1
+          fi
+          if [ -z "${{ secrets.GCP_SA_KEY }}" ]; then
+            echo "::error::GCP_SA_KEY secret is missing. Please add it to your GitHub Repository Secrets."
+            exit 1
+          fi
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
