@@ -35,8 +35,9 @@ import com.echocare.app.util.EchoCareTelemetry
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
-    onUpgradeClick: () -> Unit,
-    onBack: () -> Unit
+    onUpgradeClick: () -> Unit = {},
+    onBack: () -> Unit = {},
+    showBackButton: Boolean = false
 ) {
     val context = LocalContext.current
     val state by viewModel.uiState.collectAsState()
@@ -99,8 +100,10 @@ fun SettingsScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    if (showBackButton) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -125,7 +128,10 @@ fun SettingsScreen(
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onUpgradeClick() },
+                        .clickable {
+                            viewModel.updatePremium(true)
+                            onUpgradeClick()
+                        },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)),
                     shape = RoundedCornerShape(16.dp),
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
@@ -140,7 +146,10 @@ fun SettingsScreen(
                             Text("Upgrade to Premium", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                             Text("Unlock voice cloning, smart home sync, and database backups.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f))
                         }
-                        TextButton(onClick = onUpgradeClick) {
+                        TextButton(onClick = {
+                            viewModel.updatePremium(true)
+                            onUpgradeClick()
+                        }) {
                             Text("Upgrade", fontWeight = FontWeight.Bold)
                         }
                     }

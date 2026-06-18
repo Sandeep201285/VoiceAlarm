@@ -32,7 +32,7 @@ fun NavGraph(authViewModel: AuthViewModel) {
 
     if (isLoading) return
 
-    val startDestination = if (isOnboarded) Screen.Home.route else Screen.Onboarding.route
+    val startDestination = if (isOnboarded) Screen.MainContainer.route else Screen.Onboarding.route
 
     NavHost(
         navController    = navController,
@@ -53,18 +53,16 @@ fun NavGraph(authViewModel: AuthViewModel) {
             AuthScreen(
                 viewModel = authViewModel,
                 onAuthComplete = {
-                    navController.navigate(Screen.Home.route) {
+                    navController.navigate(Screen.MainContainer.route) {
                         popUpTo(Screen.Auth.route) { inclusive = true }
                     }
                 }
             )
         }
 
-        // ─── Home ────────────────────────────────────────────────────
-        composable(Screen.Home.route) {
-            HomeScreen(
-                viewModel = homeViewModel
-            )
+        // ─── Main Scaffold ───────────────────────────────────────────
+        composable(Screen.MainContainer.route) {
+            MainContainer()
         }
     }
 }
