@@ -1,0 +1,2794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EchoCare Premium – Voice Alarm Assistant</title>
+<style>
+  /* ── Reset & CSS Variables ────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --bg-dark:      #080915;
+    --bg-phone:     #0D0E25;
+    --card-bg:      rgba(255, 255, 255, 0.05);
+    --card-border:  rgba(255, 255, 255, 0.08);
+    
+    --primary-grad: linear-gradient(135deg, #8B5CF6, #6366F1);
+    --green-grad:   linear-gradient(135deg, #10B981, #14B8A6);
+    --orange-grad:  linear-gradient(135deg, #F59E0B, #D97706);
+    --glass-grad:   linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    
+    --primary:      #6366F1;
+    --primary-light:#8B5CF6;
+    --emerald:      #10B981;
+    --amber:        #F59E0B;
+    --rose:         #F43F5E;
+    
+    --text-main:    #F3F4F6;
+    --text-muted:   #9CA3AF;
+    --text-dim:     #6B7280;
+    
+    --font-family:  'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --transition:   0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --border-radius:24px;
+  }
+
+  body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font-family);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 15px;
+    overflow-x: hidden;
+  }
+
+  /* ── Header Area ─────────────────────────────────────────────────── */
+  .app-header {
+    text-align: center;
+    margin-bottom: 30px;
+    width: 100%;
+    max-width: 1100px;
+  }
+  .app-header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    background: var(--primary-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+    letter-spacing: -0.5px;
+  }
+  .app-header p {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* ── Layout Container (Phone + Debugger) ───────────────────────── */
+  .dashboard-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 40px;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  /* ── Mock Device Container ───────────────────────────────────────── */
+  .device-frame {
+    width: 375px;
+    height: 780px;
+    background-color: var(--bg-phone);
+    border-radius: 46px;
+    border: 4px solid #1E2142;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 100px rgba(99, 102, 241, 0.15);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  /* Android notch / pill */
+  .device-notch {
+    width: 120px;
+    height: 25px;
+    background: #1E2142;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .device-camera {
+    width: 10px;
+    height: 10px;
+    background: #0D0E25;
+    border-radius: 50%;
+  }
+
+  /* Device Status Bar */
+  .device-status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 24px 6px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    z-index: 99;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  /* ── Biometric Lock Screen ───────────────────────────────────────── */
+  .auth-lock-overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-phone);
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition);
+  }
+  .auth-lock-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .lock-shield-btn {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: var(--primary-grad);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+    position: relative;
+    border: none;
+    outline: none;
+  }
+  .lock-shield-btn::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 2px dashed var(--primary);
+    animation: rotateDashed 12s linear infinite;
+    opacity: 0.6;
+  }
+  @keyframes rotateDashed {
+    100% { transform: rotate(360deg); }
+  }
+  .biometric-scanner-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid var(--emerald);
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  .lock-shield-btn.scanning .biometric-scanner-ring {
+    animation: scannerPulse 1.2s ease-out infinite;
+  }
+  @keyframes scannerPulse {
+    0% { transform: scale(0.9); opacity: 0.8; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+
+  /* ── Onboarding / Walkthrough ────────────────────────────────────── */
+  .onboarding-screen {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-phone);
+    z-index: 990;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition);
+  }
+  .onboarding-screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .onboarding-slides {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    text-align: center;
+  }
+  .onboarding-slide {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.4s ease-out;
+  }
+  .onboarding-slide.active {
+    display: flex;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .slide-graphic {
+    font-size: 52px;
+    margin-bottom: 24px;
+    width: 100px;
+    height: 100px;
+    border-radius: 28px;
+    background: var(--glass-grad);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  }
+  .slide-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 12px;
+  }
+  .slide-desc {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    max-width: 280px;
+  }
+
+  /* Permissions list style */
+  .permissions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin-top: 15px;
+    text-align: left;
+  }
+  .permission-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .permission-details {
+    flex: 1;
+  }
+  .permission-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+  .permission-sub {
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+  .permission-checkbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #1C1F3D;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 700;
+    border: 1px solid var(--card-border);
+  }
+  .permission-checkbox.granted {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--emerald);
+    border-color: var(--emerald);
+  }
+  
+  .onboarding-footer {
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid var(--card-border);
+  }
+  .onboarding-dots {
+    display: flex;
+    gap: 8px;
+  }
+  .onboarding-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #1C1F3D;
+    transition: var(--transition);
+  }
+  .onboarding-dot.active {
+    background: var(--primary);
+    transform: scale(1.25);
+  }
+
+  /* ── Screen Navigation Host ──────────────────────────────────────── */
+  .device-body {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+  }
+  .tab-screen {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+    transition: opacity var(--transition), transform var(--transition);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 20px;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .tab-screen::-webkit-scrollbar { display: none; }
+  .tab-screen.active {
+    opacity: 1;
+    pointer-events: all;
+    transform: translateY(0);
+    z-index: 10;
+  }
+
+  /* ── HOME TAB ────────────────────────────────────────────────────── */
+  .home-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    margin-top: 6px;
+  }
+  .greeting-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-main);
+  }
+  .greeting-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .notification-bell {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+  }
+  .notification-bell::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 8px;
+    height: 8px;
+    background: var(--rose);
+    border-radius: 50%;
+    border: 1.5px solid var(--bg-phone);
+  }
+  .notification-bell:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  /* Shortcut card styling */
+  .shortcut-card {
+    border-radius: var(--border-radius);
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 16px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+  }
+  .shortcut-card:hover {
+    transform: translateY(-3px);
+  }
+  .shortcut-card.my-alarms {
+    background: var(--primary-grad);
+  }
+  .shortcut-card.groups {
+    background: var(--green-grad);
+  }
+  .shortcut-info {
+    flex: 1;
+    padding-right: 12px;
+  }
+  .shortcut-title {
+    font-size: 19px;
+    font-weight: 700;
+    color: #FFF;
+  }
+  .shortcut-desc {
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.85);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
+  .shortcut-icon-wrapper {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: #FFF;
+  }
+
+  /* Section Title */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    margin-bottom: 14px;
+  }
+  .section-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+  .section-link {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary-light);
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  /* Upcoming Alarms Container */
+  .alarm-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .alarm-item-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: var(--transition);
+  }
+  .alarm-item-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .alarm-details {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+  }
+  .alarm-bell-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(245, 158, 11, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--amber);
+  }
+  .alarm-bell-icon.inactive {
+    background: rgba(156, 163, 175, 0.1);
+    color: var(--text-muted);
+  }
+  .alarm-meta {
+    display: flex;
+    flex-direction: column;
+  }
+  .alarm-title-text {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+  .alarm-time-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  
+  /* Switches */
+  .switch-toggle {
+    width: 42px;
+    height: 22px;
+    border-radius: 99px;
+    background: #1C1F3D;
+    position: relative;
+    cursor: pointer;
+    border: none;
+    transition: background var(--transition);
+  }
+  .switch-toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #FFF;
+    top: 3px;
+    left: 3px;
+    transition: left var(--transition);
+  }
+  .switch-toggle.active {
+    background: var(--primary);
+  }
+  .switch-toggle.active::after {
+    left: 23px;
+  }
+
+  /* ── ALARMS TAB ──────────────────────────────────────────────────── */
+  .alarms-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    margin-top: 6px;
+  }
+  .alarms-title-main {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-main);
+  }
+  .plus-action-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--primary-light);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .plus-action-btn:hover {
+    background: var(--primary-grad);
+    color: #FFF;
+    border-color: transparent;
+  }
+
+  /* Big Microphone Trigger Card */
+  .microphone-trigger-card {
+    height: 190px;
+    border-radius: var(--border-radius);
+    background: var(--primary-grad);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 24px;
+    transition: var(--transition);
+    box-shadow: 0 12px 30px rgba(99, 102, 241, 0.3);
+  }
+  .microphone-trigger-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 36px rgba(99, 102, 241, 0.4);
+  }
+  .trigger-mic-circle {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: #FFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    color: var(--primary);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  }
+  .trigger-card-texts {
+    text-align: center;
+  }
+  .trigger-card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #FFF;
+  }
+  .trigger-card-subtitle {
+    font-size: 12.5px;
+    color: rgba(255, 255, 255, 0.85);
+    margin-top: 4px;
+  }
+
+  /* Your Alarms List Card */
+  .alarm-row-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .alarm-row-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+  }
+  .alarm-clock-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: var(--primary-light);
+  }
+  .alarm-clock-icon.inactive {
+    background: rgba(156, 163, 175, 0.1);
+    color: var(--text-muted);
+  }
+  .alarm-time-display {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-main);
+  }
+  .alarm-title-display {
+    font-size: 12.5px;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .alarm-recurrence-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 9px;
+    font-weight: 700;
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--emerald);
+    border-radius: 6px;
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+  .alarm-recurrence-badge.remote {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--amber);
+  }
+  .alarm-row-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .alarm-menu-btn {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .alarm-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+  }
+  /* Dropdown context menu */
+  .alarm-context-menu {
+    position: absolute;
+    right: 16px;
+    top: 48px;
+    background: #1C1F3D;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 6px 0;
+    display: none;
+    flex-direction: column;
+    z-index: 99;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  }
+  .alarm-context-item {
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--rose);
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+  }
+  .alarm-context-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* ── SETTINGS TAB ────────────────────────────────────────────────── */
+  .settings-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .settings-section-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .settings-header-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary-light);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .settings-row-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .settings-row-text {
+    flex: 1;
+    padding-right: 12px;
+  }
+  .settings-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+  .settings-sublabel {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .settings-control-select {
+    background: #1C1F3D;
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    color: var(--text-main);
+    padding: 6px 10px;
+    font-size: 12px;
+    outline: none;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .settings-slider-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  .settings-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .range-slider {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: #1C1F3D;
+    outline: none;
+    -webkit-appearance: none;
+    margin-top: 6px;
+    cursor: pointer;
+  }
+  .range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--primary);
+  }
+
+  /* Upgrade Premium Card */
+  .upgrade-premium-banner {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .upgrade-premium-banner:hover {
+    border-color: var(--primary-light);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
+  }
+  .premium-tag {
+    font-size: 11px;
+    font-weight: 700;
+    color: #FFF;
+    background: var(--primary-grad);
+    padding: 3px 8px;
+    border-radius: 6px;
+    align-self: center;
+    text-transform: uppercase;
+  }
+  .premium-banner-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+  .premium-banner-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* ── GROUPS SUB-SCREEN ───────────────────────────────────────────── */
+  .groups-subscreen {
+    position: absolute;
+    inset: 0;
+    background: var(--bg-phone);
+    z-index: 150;
+    display: none;
+    flex-direction: column;
+    padding: 16px 20px;
+    overflow-y: auto;
+  }
+  .groups-subscreen.active {
+    display: flex;
+  }
+  .subscreen-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    margin-top: 6px;
+  }
+  .back-icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    border: none;
+  }
+  .back-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .subscreen-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-main);
+  }
+  .group-info-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .group-header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .group-icon-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--emerald);
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .group-name-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+  .group-name-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .group-members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .member-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+  }
+  .member-meta {
+    display: flex;
+    flex-direction: column;
+  }
+  .member-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+  .member-phone {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+  .member-status-badge {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .member-status-badge.accepted {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--emerald);
+  }
+  .member-status-badge.pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--amber);
+  }
+
+  /* Form Input Styling */
+  .input-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 4px;
+    display: block;
+  }
+  .form-text-input {
+    width: 100%;
+    background: #1C1F3D;
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    color: #FFF;
+    padding: 10px 14px;
+    font-size: 13px;
+    outline: none;
+    font-family: inherit;
+    margin-bottom: 12px;
+  }
+  .form-text-input::placeholder {
+    color: var(--text-dim);
+  }
+  
+  /* Buttons styling */
+  .standard-btn {
+    width: 100%;
+    height: 44px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+  }
+  .standard-btn-green {
+    background: var(--emerald);
+    color: #FFF;
+  }
+  .standard-btn-green:hover {
+    background: #0D9488;
+  }
+  .standard-btn-primary {
+    background: var(--primary);
+    color: #FFF;
+  }
+  .standard-btn-primary:hover {
+    background: #4F46E5;
+  }
+
+  /* ── VOICE CREATION OVERLAY ──────────────────────────────────────── */
+  .voice-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(13, 14, 37, 0.98);
+    z-index: 800;
+    display: none;
+    flex-direction: column;
+    padding: 16px 20px;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .voice-overlay::-webkit-scrollbar { display: none; }
+  .voice-overlay.active {
+    display: flex;
+  }
+  .voice-overlay-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    margin-top: 6px;
+  }
+  .voice-overlay-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-main);
+  }
+  
+  /* Soundwave Canvas styling */
+  .canvas-container {
+    width: 100%;
+    height: 90px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #soundwave-canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Big Microphone Container */
+  .mic-pulse-container {
+    width: 200px;
+    height: 200px;
+    margin: 10px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .pulsing-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.15);
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  .voice-overlay.listening .pulsing-ring-1 {
+    animation: pulseRing 1.6s infinite linear;
+  }
+  .voice-overlay.listening .pulsing-ring-2 {
+    animation: pulseRing 1.6s infinite linear;
+    animation-delay: 0.8s;
+  }
+  @keyframes pulseRing {
+    0% { transform: scale(0.85); opacity: 0.6; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+  .mic-core-btn {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    background: var(--primary-grad);
+    border: none;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: #FFF;
+    box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+    z-index: 10;
+    transition: transform 0.1s;
+  }
+  .mic-core-btn:active {
+    transform: scale(0.95);
+  }
+
+  .voice-status-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-main);
+    text-align: center;
+  }
+  .voice-transcript-box {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    text-align: center;
+    min-height: 48px;
+    margin: 4px 0 16px;
+    padding: 0 12px;
+    line-height: 1.5;
+  }
+  
+  /* Suggestion Chips styling */
+  .suggestions-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .suggestion-heading {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .suggestion-chip-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .suggestion-chip-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+  .suggestion-speaker-icon {
+    font-size: 16px;
+    color: var(--primary-light);
+  }
+  .suggestion-chip-text {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+
+  /* ── CONFIRMATION MODAL ──────────────────────────────────────────── */
+  .confirm-alarm-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 6, 16, 0.85);
+    z-index: 900;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    animation: overlayFadeIn 0.2s ease-out;
+  }
+  @keyframes overlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  .confirm-alarm-card {
+    width: 100%;
+    background: #0D0E25;
+    border: 1px solid var(--card-border);
+    border-radius: 28px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    animation: cardScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes cardScaleIn {
+    from { transform: scale(0.9) translateY(20px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  .confirm-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-main);
+    text-align: center;
+  }
+  .confirm-details-box {
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .confirm-detail-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .confirm-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--primary-light);
+    text-transform: uppercase;
+  }
+  .confirm-value {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-main);
+  }
+  .confirm-buttons-row {
+    display: flex;
+    gap: 12px;
+  }
+  .modal-cancel-btn {
+    flex: 1;
+    height: 44px;
+    background: transparent;
+    border: 1px solid var(--outline);
+    border-radius: 12px;
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .modal-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .modal-confirm-btn {
+    flex: 1;
+    height: 44px;
+    background: var(--primary);
+    border: none;
+    border-radius: 12px;
+    color: #FFF;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .modal-confirm-btn:hover {
+    background: #4F46E5;
+  }
+
+  /* ── DEVICE BOTTOM NAVIGATION ────────────────────────────────────── */
+  .device-bottom-nav {
+    display: flex;
+    background-color: #0B0C1E;
+    border-top: 1px solid var(--card-border);
+    padding-bottom: 14px;
+    padding-top: 6px;
+    flex-shrink: 0;
+  }
+  .nav-tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 500;
+    transition: var(--transition);
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 6px 0;
+  }
+  .nav-tab-item.active {
+    color: var(--primary-light);
+  }
+  .nav-icon {
+    font-size: 20px;
+  }
+  
+  /* ── Debugger/Logcat Console Panel ────────────────────────────────── */
+  .debugger-panel {
+    flex: 1;
+    height: 780px;
+    background-color: #0A0B18;
+    border: 1px solid var(--card-border);
+    border-radius: 28px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 15px 45px rgba(0,0,0,0.5);
+  }
+  .debugger-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .debugger-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--emerald);
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .debugger-led {
+    width: 8px;
+    height: 8px;
+    background-color: var(--emerald);
+    border-radius: 50%;
+    animation: flashLED 1s infinite alternate;
+  }
+  @keyframes flashLED {
+    0% { opacity: 0.4; }
+    100% { opacity: 1; }
+  }
+  .debugger-console {
+    flex: 1;
+    background-color: #04050D;
+    padding: 16px;
+    overflow-y: auto;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 11px;
+    color: #8C8FC2;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--card-border) transparent;
+  }
+  .debugger-console::-webkit-scrollbar {
+    width: 6px;
+  }
+  .debugger-console::-webkit-scrollbar-thumb {
+    background-color: var(--card-border);
+    border-radius: 3px;
+  }
+  .log-row {
+    line-height: 1.4;
+    word-break: break-all;
+  }
+  .log-tag {
+    font-weight: 700;
+    color: var(--primary-light);
+  }
+  .log-event {
+    color: var(--emerald);
+  }
+  .log-info {
+    color: #D1D5DB;
+  }
+  .log-warn {
+    color: var(--amber);
+  }
+  .log-error {
+    color: var(--rose);
+  }
+  .debugger-actions {
+    padding: 12px 18px;
+    border-top: 1px solid var(--card-border);
+    background: rgba(255, 255, 255, 0.02);
+    display: flex;
+    gap: 10px;
+  }
+  .action-pill-btn {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    background: #1C1F3D;
+    border: 1px solid var(--card-border);
+    color: var(--text-main);
+  }
+  .action-pill-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* Mobile responsiveness */
+  @media(max-width: 800px) {
+    body {
+      padding: 0;
+    }
+    .app-header {
+      display: none;
+    }
+    .dashboard-layout {
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    .device-frame {
+      width: 100vw;
+      height: 100vh;
+      border-radius: 0;
+      border: none;
+    }
+    .debugger-panel {
+      display: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── APP HEADER ────────────────────────────────────────────────── -->
+<header class="app-header">
+  <h1>🛡️ EchoCare Premium Web Prototype</h1>
+  <p>Fully simulated 3-tab layout with active canvas soundwave, biometric lock, NLP preset chips, and exact alarm schedules.</p>
+</header>
+
+<!-- ── DASHBOARD LAYOUT ──────────────────────────────────────────── -->
+<div class="dashboard-layout">
+
+  <!-- ==========================================
+       MOCK PHONE DEVICE
+  =========================================== -->
+  <div class="device-frame" id="phone-container">
+    
+    <!-- Notch / Camera -->
+    <div class="device-notch">
+      <div class="device-camera"></div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="device-status-bar">
+      <span id="device-time">10:30</span>
+      <span style="font-weight:800; color:var(--primary-light)">EchoCare Premium</span>
+      <span>🔋 100%</span>
+    </div>
+
+    <!-- BIOMETRIC LOCK SCREEN OVERLAY -->
+    <div class="auth-lock-overlay active" id="lock-screen">
+      <button class="lock-shield-btn" id="biometric-trigger" onclick="runBiometricScan()">
+        <div class="biometric-scanner-ring"></div>
+        <span style="font-size: 40px;">👤</span>
+      </button>
+      <h2 style="font-size: 19px; font-weight: 800; margin-bottom: 6px;">EchoCare Locked</h2>
+      <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 24px; max-width: 250px;">
+        Verify fingerprint or face unlock to access your caregiver dashboard.
+      </p>
+      <button class="standard-btn standard-btn-primary" style="max-width: 160px; margin: 0 auto;" onclick="runBiometricScan()">Unlock App</button>
+    </div>
+
+    <!-- ONBOARDING SCREEN OVERLAY -->
+    <div class="onboarding-screen" id="onboarding-screen">
+      <div class="onboarding-slides">
+        
+        <!-- Slide 0: Welcome -->
+        <div class="onboarding-slide active" id="slide-0">
+          <div class="slide-graphic">🎙️</div>
+          <h3 class="slide-title">Voice Reminders</h3>
+          <p class="slide-desc">Speak normally to schedule voice alarms. EchoCare parses time and details instantly.</p>
+        </div>
+
+        <!-- Slide 1: Care Groups -->
+        <div class="onboarding-slide" id="slide-1">
+          <div class="slide-graphic">💚</div>
+          <h3 class="slide-title">Family Care</h3>
+          <p class="slide-desc">Schedule exact voice reminders remotely for parents or kids. Fires even if they are offline.</p>
+        </div>
+
+        <!-- Slide 2: Permissions -->
+        <div class="onboarding-slide" id="slide-2">
+          <h3 class="slide-title">System Setup</h3>
+          <p class="slide-desc" style="font-size: 11px;">Enable permissions for reliable background execution.</p>
+          <div class="permissions-list">
+            <div class="permission-card">
+              <div class="permission-details">
+                <div class="permission-label">Microphone Access</div>
+                <div class="permission-sub">Required for voice commands.</div>
+              </div>
+              <div class="permission-checkbox" id="perm-mic">✗</div>
+            </div>
+            <div class="permission-card">
+              <div class="permission-details">
+                <div class="permission-label">Exact Alarms</div>
+                <div class="permission-sub">Fires at the exact specified second.</div>
+              </div>
+              <div class="permission-checkbox" id="perm-alarm">✗</div>
+            </div>
+            <div class="permission-card">
+              <div class="permission-details">
+                <div class="permission-label">Ignore Battery Optimizations</div>
+                <div class="permission-sub">Allows background triggers.</div>
+              </div>
+              <div class="permission-checkbox" id="perm-battery">✗</div>
+            </div>
+          </div>
+          <button class="standard-btn standard-btn-green" style="margin-top: 15px; height: 36px; font-size: 11.5px;" onclick="grantOnboardingPermissions()">Configure System Details</button>
+        </div>
+
+        <!-- Slide 3: Finish Profile -->
+        <div class="onboarding-slide" id="slide-3">
+          <div class="slide-graphic">👤</div>
+          <h3 class="slide-title">Define Nickname</h3>
+          <p class="slide-desc" style="margin-bottom: 16px;">Set your name so family members know who scheduled the alarm.</p>
+          <input type="text" class="form-text-input" id="profile-name-input" placeholder="e.g. Sandeep" style="text-align: center; max-width: 240px;" />
+        </div>
+
+      </div>
+
+      <div class="onboarding-footer">
+        <div class="onboarding-dots">
+          <div class="onboarding-dot active" id="dot-0"></div>
+          <div class="onboarding-dot" id="dot-1"></div>
+          <div class="onboarding-dot" id="dot-2"></div>
+          <div class="onboarding-dot" id="dot-3"></div>
+        </div>
+        <button class="action-pill-btn" onclick="nextOnboardingSlide()" id="onboarding-next-btn">Next →</button>
+      </div>
+    </div>
+
+    <!-- DEVICE MAIN BODY & TABS -->
+    <div class="device-body">
+
+      <!-- TAB 1: HOME SCREEN -->
+      <div class="tab-screen active" id="tab-home">
+        <div class="home-header">
+          <div>
+            <div class="greeting-sub">Welcome back,</div>
+            <div class="greeting-title" id="home-user-name">Sandeep 👋</div>
+          </div>
+          <div class="notification-bell" onclick="triggerNotificationSim()"></div>
+        </div>
+
+        <!-- Shortcut Card 1: My Alarms -->
+        <div class="shortcut-card my-alarms" onclick="switchToTab('alarms')">
+          <div class="shortcut-info">
+            <div class="shortcut-title">My Alarms</div>
+            <div class="shortcut-desc">Manage voice alarms and test parsing algorithms.</div>
+          </div>
+          <div class="shortcut-icon-wrapper">⏰</div>
+        </div>
+
+        <!-- Shortcut Card 2: Groups -->
+        <div class="shortcut-card groups" onclick="openGroupsScreen()">
+          <div class="shortcut-info">
+            <div class="shortcut-title">Groups</div>
+            <div class="shortcut-desc">Set alarms remotely for parents, kids, or caregivers.</div>
+          </div>
+          <div class="shortcut-icon-wrapper">👥</div>
+        </div>
+
+        <!-- Upcoming Alarms Section -->
+        <div class="section-header">
+          <div class="section-title">Upcoming Today</div>
+          <a class="section-link" onclick="switchToTab('alarms')">View all</a>
+        </div>
+
+        <div class="alarm-cards-container" id="upcoming-alarms-container">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- TAB 2: ALARMS MANAGER -->
+      <div class="tab-screen" id="tab-alarms">
+        <div class="alarms-topbar">
+          <div class="alarms-title-main">My Alarms</div>
+          <div class="plus-action-btn" onclick="openVoiceOverlay()">+</div>
+        </div>
+
+        <!-- Big Mic Trigger Card -->
+        <div class="microphone-trigger-card" onclick="openVoiceOverlay()">
+          <div class="trigger-mic-circle">🎙️</div>
+          <div class="trigger-card-texts">
+            <div class="trigger-card-title">Create Alarm</div>
+            <div class="trigger-card-subtitle">Tap to speak your alarm in any language</div>
+          </div>
+        </div>
+
+        <div class="section-header">
+          <div class="section-title">Your Reminders</div>
+        </div>
+
+        <div class="alarm-cards-container" id="all-alarms-container" style="flex: 1; overflow-y: auto;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- TAB 3: SETTINGS SCREEN -->
+      <div class="tab-screen" id="tab-settings">
+        <div class="home-header">
+          <div class="greeting-title">Settings</div>
+        </div>
+
+        <div class="settings-wrapper">
+          
+          <!-- Upgrade Banner -->
+          <div class="upgrade-premium-banner" onclick="simulatePremiumUpgrade()">
+            <div class="premium-tag" id="settings-premium-status">Free Account</div>
+            <div class="premium-banner-title" id="settings-premium-title">Upgrade to Premium</div>
+            <div class="premium-banner-desc" id="settings-premium-desc">
+              Unlock custom biometric lock, SQLCipher offline backups, and voice cloning synthesizer.
+            </div>
+          </div>
+
+          <!-- Section: Customization -->
+          <div class="settings-section-card">
+            <div class="settings-header-label">General</div>
+            
+            <div class="settings-row-item">
+              <div class="settings-row-text">
+                <div class="settings-label">Biometric Verification</div>
+                <div class="settings-sublabel">Prompt lock screen upon application launch.</div>
+              </div>
+              <button class="switch-toggle active" id="settings-biometric-toggle" onclick="toggleSettingsBiometrics()"></button>
+            </div>
+
+            <div class="settings-row-item">
+              <div class="settings-row-text">
+                <div class="settings-label">Voice Language</div>
+                <div class="settings-sublabel">Default spoken text feedback option.</div>
+              </div>
+              <select class="settings-control-select" id="settings-language-select" onchange="changeLanguage()">
+                <option value="en-US">English (US)</option>
+                <option value="hi-IN">Hindi (हिंदी)</option>
+              </select>
+            </div>
+
+            <div class="settings-slider-wrapper">
+              <div class="settings-label">Speech Rate</div>
+              <div class="settings-sublabel">Adjust speed of spoken alarm announcements.</div>
+              <input type="range" class="range-slider" min="0.5" max="2" step="0.1" value="1.0" id="settings-speech-rate" onchange="changeSpeechRate()" />
+              <div class="settings-slider-labels">
+                <span>0.5x</span>
+                <span id="speech-rate-val">1.0x (Normal)</span>
+                <span>2.0x</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Data Protection -->
+          <div class="settings-section-card">
+            <div class="settings-header-label">Security & Encryption</div>
+            
+            <div class="settings-row-item">
+              <div class="settings-row-text">
+                <div class="settings-label">Room Encrypted DB</div>
+                <div class="settings-sublabel">SQLCipher key integration. Click to check key integrity.</div>
+              </div>
+              <button class="action-pill-btn" onclick="checkSqlcipherKey()">Check Key</button>
+            </div>
+
+            <div class="settings-row-item">
+              <div class="settings-row-text">
+                <div class="settings-label">Export Database Backup</div>
+                <div class="settings-sublabel">Encrypt and save backup.bin locally.</div>
+              </div>
+              <button class="action-pill-btn" onclick="exportBackup()">Export</button>
+            </div>
+          </div>
+
+          <!-- Section: Diagnostics -->
+          <div class="settings-section-card" style="margin-bottom: 20px;">
+            <div class="settings-header-label">Diagnostics</div>
+            <button class="standard-btn standard-btn-primary" style="height: 36px; font-size: 12px; background: #3B4270;" onclick="viewTelemetryQueue()">View Local Telemetry Queue</button>
+            <button class="standard-btn" style="height: 36px; font-size: 12px; background: rgba(244, 63, 94, 0.15); color: var(--rose);" onclick="simulateFatalCrash()">Simulate Application Crash</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GROUPS SUB-SCREEN (Slides over Home/Alarms) -->
+      <div class="groups-subscreen" id="groups-subscreen">
+        <div class="subscreen-topbar">
+          <button class="back-icon-btn" onclick="closeGroupsScreen()">←</button>
+          <div class="subscreen-title">Family Groups</div>
+        </div>
+
+        <div class="group-info-card">
+          <div class="group-header-row">
+            <div class="group-icon-avatar">👥</div>
+            <div>
+              <div class="group-name-title">Caregivers</div>
+              <div class="group-name-sub">Created by you • Active</div>
+            </div>
+          </div>
+
+          <div class="group-members-list" id="group-members-list-container">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Schedule Remote Alarm Box -->
+        <div class="group-info-card">
+          <div class="group-name-title" style="margin-bottom: 4px;">Schedule Remote Alarm</div>
+          <div class="group-name-sub" style="margin-bottom: 12px; line-height: 1.4;">
+            Send an exact voice reminder directly to Papa's or Kid's device.
+          </div>
+
+          <label class="input-label">Select Recipient</label>
+          <select class="form-text-input" id="remote-recipient-select">
+            <!-- Populated dynamically -->
+          </select>
+
+          <label class="input-label">Spoken Voice Message</label>
+          <input type="text" class="form-text-input" id="remote-alarm-message" placeholder="e.g. Please take your blue medicine" />
+
+          <label class="input-label">Trigger Time</label>
+          <input type="time" class="form-text-input" id="remote-alarm-time" value="20:00" />
+
+          <button class="standard-btn standard-btn-green" onclick="sendRemoteAlarm()">Send Exact Voice Alarm</button>
+        </div>
+
+        <!-- Invite Member Box -->
+        <div class="group-info-card" style="margin-bottom: 20px;">
+          <div class="group-name-title" style="margin-bottom: 4px;">Invite Family Member</div>
+          <input type="text" class="form-text-input" id="invite-name" placeholder="Member Nickname (e.g. Papa)" style="margin-bottom: 8px;" />
+          <input type="text" class="form-text-input" id="invite-phone" placeholder="Member Phone Number" />
+          <button class="standard-btn standard-btn-primary" onclick="inviteFamilyMember()">Send Invite</button>
+        </div>
+      </div>
+
+      <!-- VOICE CREATION OVERLAY (Full-screen Voice creation) -->
+      <div class="voice-overlay" id="voice-overlay">
+        <div class="voice-overlay-header">
+          <div class="voice-overlay-title">Voice Assistant</div>
+          <button class="back-icon-btn" onclick="closeVoiceOverlay()">✕</button>
+        </div>
+
+        <!-- Soundwave Canvas -->
+        <div class="canvas-container">
+          <canvas id="soundwave-canvas"></canvas>
+        </div>
+
+        <!-- Mic Button -->
+        <div class="mic-pulse-container">
+          <div class="pulsing-ring pulsing-ring-1"></div>
+          <div class="pulsing-ring pulsing-ring-2"></div>
+          <button class="mic-core-btn" id="mic-action-btn" onclick="toggleVoiceListening()">🎙️</button>
+        </div>
+
+        <div class="voice-status-text" id="voice-status-label">Tap to speak</div>
+        <div class="voice-transcript-box" id="voice-transcript-display">
+          Say something like: "Wake me up tomorrow at 7 AM"
+        </div>
+
+        <!-- NLP Suggestion Chips -->
+        <div class="suggestions-section">
+          <div class="suggestion-heading">Suggestions (Tap to auto-parse)</div>
+          
+          <div class="suggestion-chip-card" onclick="simulateVoiceCommand('Wake me up tomorrow at 5 AM')">
+            <span class="suggestion-speaker-icon">📢</span>
+            <span class="suggestion-chip-text">"Wake me up tomorrow at 5 AM"</span>
+          </div>
+
+          <div class="suggestion-chip-card" onclick="simulateVoiceCommand('Remind me to drink water every 2 hours')">
+            <span class="suggestion-speaker-icon">📢</span>
+            <span class="suggestion-chip-text">"Remind me to drink water every 2 hours"</span>
+          </div>
+
+          <div class="suggestion-chip-card" onclick="simulateVoiceCommand('Remind me every evening at 7 PM to walk')">
+            <span class="suggestion-speaker-icon">📢</span>
+            <span class="suggestion-chip-text">"Remind me every evening at 7 PM to walk"</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONFIRMATION ALARM DIALOG (Overlay inside overlay) -->
+      <div class="confirm-alarm-modal" id="confirm-alarm-modal">
+        <div class="confirm-alarm-card">
+          <div class="confirm-title">Confirm Parsed Alarm</div>
+          
+          <div class="confirm-details-box">
+            <div class="confirm-detail-row">
+              <span class="confirm-label">Title / Event</span>
+              <span class="confirm-value" id="confirm-alarm-title">Wake Up</span>
+            </div>
+            <div class="confirm-detail-row">
+              <span class="confirm-label">Trigger Time</span>
+              <span class="confirm-value" id="confirm-alarm-time-str">Tomorrow, 5:00 AM</span>
+            </div>
+            <div class="confirm-detail-row">
+              <span class="confirm-label">Recurrence Type</span>
+              <span class="confirm-value" id="confirm-alarm-recurrence">DAILY</span>
+            </div>
+          </div>
+
+          <div class="confirm-buttons-row">
+            <button class="modal-cancel-btn" onclick="cancelParsedAlarm()">Cancel</button>
+            <button class="modal-confirm-btn" onclick="saveParsedAlarm()">Save Alarm</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Device Bottom Navigation -->
+    <div class="device-bottom-nav">
+      <button class="nav-tab-item active" id="nav-btn-home" onclick="switchToTab('home')">
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
+      </button>
+      <button class="nav-tab-item" id="nav-btn-alarms" onclick="switchToTab('alarms')">
+        <span class="nav-icon">⏰</span>
+        <span>Alarms</span>
+      </button>
+      <button class="nav-tab-item" id="nav-btn-settings" onclick="switchToTab('settings')">
+        <span class="nav-icon">⚙️</span>
+        <span>Settings</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ==========================================
+       LOGCAT / DIAGNOSTICS CONSOLE
+  =========================================== -->
+  <div class="debugger-panel">
+    <div class="debugger-header">
+      <div class="debugger-title">
+        <div class="debugger-led"></div>
+        <span>DEVICE LOGCAT CONSOLE (SYSTEM DIAGNOSTICS)</span>
+      </div>
+      <span style="font-size: 11px; font-weight: 700; color: var(--text-muted);">SQLCipher Encrypted</span>
+    </div>
+
+    <div class="debugger-console" id="logcat-console">
+      <!-- Real-time logs stream here -->
+    </div>
+
+    <div class="debugger-actions">
+      <button class="action-pill-btn" onclick="clearConsole()">Clear Console</button>
+      <button class="action-pill-btn" onclick="runHealthDiagnostics()">Run Diagnostics</button>
+      <button class="action-pill-btn" onclick="testFcmPush()">Simulate Remote FCM Dispatch</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── SCRIPT LOGIC ────────────────────────────────────────────────── -->
+<script>
+  // ── Database & State Setup ────────────────────────────────────────
+  let state = {
+    userProfile: {
+      name: "Sandeep",
+      isOnboarded: false,
+      biometricEnabled: true,
+      premiumUser: false,
+      language: "en-US",
+      speechRate: 1.0
+    },
+    alarms: [
+      {
+        id: "alarm_1",
+        title: "Papa's BP Medicine",
+        message: "Tell Papa to take his BP medicine.",
+        time: "20:00",
+        hour: 20,
+        minute: 0,
+        isActive: true,
+        recurrence: "DAILY",
+        recipientId: "member_1",
+        recipientName: "Papa"
+      },
+      {
+        id: "alarm_2",
+        title: "Drink Water Alert",
+        message: "Time to hydrate! Drink water.",
+        time: "10:30",
+        hour: 10,
+        minute: 30,
+        isActive: true,
+        recurrence: "HOURLY (2h)",
+        recipientId: null,
+        recipientName: "Self"
+      }
+    ],
+    groupMembers: [
+      { id: "member_1", name: "Papa", phone: "+91 98765 43210", status: "ACCEPTED", userId: "user_papa" },
+      { id: "member_2", name: "Mummy", phone: "+91 98765 01234", status: "PENDING", userId: "user_mummy" }
+    ],
+    permissions: {
+      mic: false,
+      alarm: false,
+      battery: false
+    },
+    telemetryQueue: [],
+    sqlcipherKeyOk: true
+  };
+
+  // Temporarily holds parsed alarm details for saving confirmation
+  let pendingParsedAlarm = null;
+  let isListening = false;
+  let canvasAnimationId = null;
+
+  // ── Initializer ───────────────────────────────────────────────────
+  window.addEventListener('DOMContentLoaded', () => {
+    loadLocalState();
+    updateClock();
+    setInterval(updateClock, 1000);
+    
+    // Check if onboarded
+    if (!state.userProfile.isOnboarded) {
+      document.getElementById('lock-screen').classList.remove('active');
+      document.getElementById('onboarding-screen').classList.add('active');
+      log("SYSTEM", "Launch", "First launch detected. Showing onboarding walkthrough.");
+    } else {
+      // Biometrics gate
+      if (state.userProfile.biometricEnabled) {
+        document.getElementById('lock-screen').classList.add('active');
+        log("BIOMETRIC", "Lock", "Security gate active. Authenticate to enter.");
+      } else {
+        document.getElementById('lock-screen').classList.remove('active');
+        log("SYSTEM", "Launch", "Security bypass active. Launching dashboard.");
+      }
+    }
+
+    renderAlarms();
+    renderGroupMembers();
+    renderRecipientSelect();
+    
+    log("ROOM_DB", "Init", "Database loaded from SQLCipher encrypted container.", "INFO");
+    log("TELEMETRY", "Queue", "Local telemetry buffer initialized.", "INFO");
+  });
+
+  function loadLocalState() {
+    const saved = localStorage.getItem("echocare_premium_state");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        state = { ...state, ...parsed };
+        
+        // Apply settings UI updates
+        document.getElementById('settings-biometric-toggle').className = state.userProfile.biometricEnabled ? "switch-toggle active" : "switch-toggle";
+        document.getElementById('settings-language-select').value = state.userProfile.language;
+        document.getElementById('settings-speech-rate').value = state.userProfile.speechRate;
+        document.getElementById('speech-rate-val').innerText = state.userProfile.speechRate + "x" + (state.userProfile.speechRate == 1.0 ? " (Normal)" : "");
+        
+        if (state.userProfile.name) {
+          document.getElementById('home-user-name').innerText = state.userProfile.name + " 👋";
+          document.getElementById('profile-name-input').value = state.userProfile.name;
+        }
+
+        if (state.userProfile.premiumUser) {
+          applyPremiumUI();
+        }
+      } catch (e) {
+        console.error("State restore error:", e);
+      }
+    }
+  }
+
+  function saveState() {
+    localStorage.setItem("echocare_premium_state", JSON.stringify(state));
+  }
+
+  // ── Clock update ──────────────────────────────────────────────────
+  function updateClock() {
+    const d = new Date();
+    const minStr = String(d.getMinutes()).padStart(2, '0');
+    let hr = d.getHours();
+    const ampm = hr >= 12 ? 'PM' : 'AM';
+    let displayHr = hr % 12;
+    displayHr = displayHr ? displayHr : 12; // 0 should be 12
+    document.getElementById('device-time').innerText = displayHr + ":" + minStr + " " + ampm;
+  }
+
+  // ── System Logs Console (Logcat) ──────────────────────────────────
+  function log(tag, event, msg, level = "INFO") {
+    const consoleEl = document.getElementById('logcat-console');
+    if (!consoleEl) return;
+
+    const timeStr = new Date().toISOString().split('T')[1].substring(0, 12);
+    
+    let levelClass = "log-info";
+    if (level === "WARN") levelClass = "log-warn";
+    if (level === "ERROR") levelClass = "log-error";
+    if (level === "EVENT") levelClass = "log-event";
+
+    const line = document.createElement('div');
+    line.className = "log-row";
+    line.innerHTML = `[${timeStr}] <span class="log-tag">[${tag}]</span> <span class="${levelClass}">${event}</span>: ${msg}`;
+    
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+
+    // Send to mock telemetry queue
+    if (tag !== "TELEMETRY" && tag !== "SYSTEM") {
+      state.telemetryQueue.push({ timestamp: Date.now(), level, tag, event, message: msg });
+      if (state.telemetryQueue.length > 50) state.telemetryQueue.shift();
+    }
+  }
+
+  function clearConsole() {
+    document.getElementById('logcat-console').innerHTML = "";
+    log("SYSTEM", "Console", "Console cleared by user.");
+  }
+
+  // ── Biometric Authentication ──────────────────────────────────────
+  function runBiometricScan() {
+    const scanBtn = document.getElementById('biometric-trigger');
+    scanBtn.classList.add('scanning');
+    log("BIOMETRIC", "Sensor", "Fingerprint sensor active, scanning...");
+    
+    // Simulate biometric check latency
+    setTimeout(() => {
+      scanBtn.classList.remove('scanning');
+      document.getElementById('lock-screen').classList.remove('active');
+      log("BIOMETRIC", "Success", "Biometrics verified. Cryptographic key unlocked.", "EVENT");
+      
+      // Auto welcome TTS
+      speakText(state.userProfile.language === "hi-IN" ? "नमस्ते संदीप, ऐप में आपका स्वागत है।" : "Welcome back, Sandeep!");
+    }, 1200);
+  }
+
+  function toggleSettingsBiometrics() {
+    const btn = document.getElementById('settings-biometric-toggle');
+    state.userProfile.biometricEnabled = !state.userProfile.biometricEnabled;
+    btn.className = state.userProfile.biometricEnabled ? "switch-toggle active" : "switch-toggle";
+    saveState();
+    
+    log("BIOMETRIC", "Config", `Biometrics verification is now ${state.userProfile.biometricEnabled ? 'ENABLED' : 'DISABLED'}.`, "WARN");
+  }
+
+  // ── Onboarding / Permissions Logic ────────────────────────────────
+  let currentOnboardSlide = 0;
+  
+  function nextOnboardingSlide() {
+    if (currentOnboardSlide === 2 && (!state.permissions.mic || !state.permissions.alarm || !state.permissions.battery)) {
+      alert("Please configure system details/permissions before proceeding.");
+      return;
+    }
+
+    if (currentOnboardSlide === 3) {
+      // Finish onboarding
+      const nameInput = document.getElementById('profile-name-input').value.trim();
+      state.userProfile.name = nameInput || "Sandeep";
+      state.userProfile.isOnboarded = true;
+      saveState();
+
+      document.getElementById('home-user-name').innerText = state.userProfile.name + " 👋";
+      document.getElementById('onboarding-screen').classList.remove('active');
+      
+      log("ONBOARD", "Completed", `Profile configured with nickname: ${state.userProfile.name}`, "EVENT");
+      
+      // Redirect to biometric lock or dashboard
+      if (state.userProfile.biometricEnabled) {
+        document.getElementById('lock-screen').classList.add('active');
+      }
+      return;
+    }
+
+    // Advance slide
+    document.getElementById(`slide-${currentOnboardSlide}`).classList.remove('active');
+    document.getElementById(`dot-${currentOnboardSlide}`).classList.remove('active');
+    
+    currentOnboardSlide++;
+    
+    document.getElementById(`slide-${currentOnboardSlide}`).classList.add('active');
+    document.getElementById(`dot-${currentOnboardSlide}`).classList.add('active');
+
+    if (currentOnboardSlide === 3) {
+      document.getElementById('onboarding-next-btn').innerText = "Finish";
+    }
+  }
+
+  function grantOnboardingPermissions() {
+    log("SYSTEM", "Permissions", "Requesting Android platform permissions...");
+    
+    setTimeout(() => {
+      state.permissions.mic = true;
+      state.permissions.alarm = true;
+      state.permissions.battery = true;
+      
+      document.getElementById('perm-mic').innerText = "✓";
+      document.getElementById('perm-mic').classList.add('granted');
+      document.getElementById('perm-alarm').innerText = "✓";
+      document.getElementById('perm-alarm').classList.add('granted');
+      document.getElementById('perm-battery').innerText = "✓";
+      document.getElementById('perm-battery').classList.add('granted');
+      
+      log("SYSTEM", "Permissions", "Android.permission.RECORD_AUDIO: GRANTED", "INFO");
+      log("SYSTEM", "Permissions", "Android.permission.SCHEDULE_EXACT_ALARM: GRANTED", "INFO");
+      log("SYSTEM", "Permissions", "Android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS: GRANTED", "INFO");
+      
+      saveState();
+    }, 800);
+  }
+
+  // ── Tab Screen Navigation ─────────────────────────────────────────
+  function switchToTab(tabName) {
+    // Deactivate all screens & buttons
+    document.querySelectorAll('.tab-screen').forEach(scr => scr.classList.remove('active'));
+    document.querySelectorAll('.nav-tab-item').forEach(btn => btn.classList.remove('active'));
+
+    // Activate selected screen
+    if (tabName === 'home') {
+      document.getElementById('tab-home').classList.add('active');
+      document.getElementById('nav-btn-home').classList.add('active');
+      log("UI", "TabSwitch", "Navigated to Home Tab");
+    } else if (tabName === 'alarms') {
+      document.getElementById('tab-alarms').classList.add('active');
+      document.getElementById('nav-btn-alarms').classList.add('active');
+      log("UI", "TabSwitch", "Navigated to Alarms Tab");
+    } else if (tabName === 'settings') {
+      document.getElementById('tab-settings').classList.add('active');
+      document.getElementById('nav-btn-settings').classList.add('active');
+      log("UI", "TabSwitch", "Navigated to Settings Tab");
+    }
+  }
+
+  // Groups Overlay Screen
+  function openGroupsScreen() {
+    document.getElementById('groups-subscreen').classList.add('active');
+    log("UI", "Overlay", "Opened Groups Sub-screen");
+  }
+
+  function closeGroupsScreen() {
+    document.getElementById('groups-subscreen').classList.remove('active');
+    log("UI", "Overlay", "Closed Groups Sub-screen");
+  }
+
+  // ── Dynamic Rendering of Alarms & Members ─────────────────────────
+  function renderAlarms() {
+    const upcomingContainer = document.getElementById('upcoming-alarms-container');
+    const allAlarmsContainer = document.getElementById('all-alarms-container');
+    
+    upcomingContainer.innerHTML = "";
+    allAlarmsContainer.innerHTML = "";
+
+    const activeUpcoming = state.alarms.filter(a => a.isActive);
+
+    if (activeUpcoming.length === 0) {
+      upcomingContainer.innerHTML = `
+        <div style="text-align:center; padding: 24px; color: var(--text-dim); font-size:13px;">
+          No upcoming alarms scheduled today.
+        </div>
+      `;
+    } else {
+      activeUpcoming.forEach(alarm => {
+        const item = document.createElement('div');
+        item.className = "alarm-item-card";
+        item.innerHTML = `
+          <div class="alarm-details">
+            <div class="alarm-bell-icon">🔔</div>
+            <div class="alarm-meta">
+              <span class="alarm-title-text">${alarm.title}</span>
+              <span class="alarm-time-text">Today, ${formatTimeTo12h(alarm.hour, alarm.minute)}</span>
+            </div>
+          </div>
+          <button class="switch-toggle active" onclick="toggleAlarmActive('${alarm.id}')"></button>
+        `;
+        upcomingContainer.appendChild(item);
+      });
+    }
+
+    if (state.alarms.length === 0) {
+      allAlarmsContainer.innerHTML = `
+        <div style="text-align:center; padding: 40px 20px; color: var(--text-dim); font-size:13px;">
+          No alarms found. Tap the microphone to create one.
+        </div>
+      `;
+    } else {
+      state.alarms.forEach(alarm => {
+        const activeClass = alarm.isActive ? "active" : "";
+        const iconClass = alarm.isActive ? "" : "inactive";
+        const badgeText = alarm.recipientId ? `Remote: ${alarm.recipientName}` : "Self";
+        const badgeClass = alarm.recipientId ? "remote" : "";
+        
+        const item = document.createElement('div');
+        item.className = "alarm-row-card";
+        item.id = `alarm-card-${alarm.id}`;
+        item.innerHTML = `
+          <div class="alarm-row-left">
+            <div class="alarm-clock-icon ${iconClass}">⏰</div>
+            <div class="alarm-meta">
+              <span class="alarm-time-display">${formatTimeTo12h(alarm.hour, alarm.minute)}</span>
+              <span class="alarm-title-display">${alarm.title}</span>
+              <div>
+                <span class="alarm-recurrence-badge ${badgeClass}">${badgeText}</span>
+              </div>
+            </div>
+          </div>
+          <div class="alarm-row-right">
+            <button class="switch-toggle ${activeClass}" onclick="toggleAlarmActive('${alarm.id}')"></button>
+            <button class="alarm-menu-btn" onclick="toggleAlarmContextMenu('${alarm.id}')">⋮</button>
+          </div>
+          <div class="alarm-context-menu" id="context-menu-${alarm.id}">
+            <div class="alarm-context-item" onclick="deleteAlarm('${alarm.id}')">Delete Alarm</div>
+          </div>
+        `;
+        allAlarmsContainer.appendChild(item);
+      });
+    }
+  }
+
+  function renderGroupMembers() {
+    const list = document.getElementById('group-members-list-container');
+    list.innerHTML = "";
+    
+    state.groupMembers.forEach(m => {
+      const statusClass = m.status.toLowerCase();
+      const item = document.createElement('div');
+      item.className = "member-row";
+      item.innerHTML = `
+        <div class="member-meta">
+          <span class="member-name">${m.name}</span>
+          <span class="member-phone">${m.phone}</span>
+        </div>
+        <span class="member-status-badge ${statusClass}">${m.status}</span>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  function renderRecipientSelect() {
+    const select = document.getElementById('remote-recipient-select');
+    select.innerHTML = "";
+    
+    const acceptedMembers = state.groupMembers.filter(m => m.status === "ACCEPTED");
+    if (acceptedMembers.length === 0) {
+      select.innerHTML = `<option value="">No accepted group members</option>`;
+    } else {
+      acceptedMembers.forEach(m => {
+        select.innerHTML += `<option value="${m.id}">${m.name} (${m.phone})</option>`;
+      });
+    }
+  }
+
+  function formatTimeTo12h(hour, minute) {
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    let hr = hour % 12;
+    hr = hr ? hr : 12;
+    const min = String(minute).padStart(2, '0');
+    return `${hr}:${min} ${ampm}`;
+  }
+
+  // ── Alarms Manipulation ───────────────────────────────────────────
+  function toggleAlarmActive(id) {
+    const alarm = state.alarms.find(a => a.id === id);
+    if (alarm) {
+      alarm.isActive = !alarm.isActive;
+      saveState();
+      renderAlarms();
+      log("ROOM_DB", "Update", `Toggled alarm "${alarm.title}" state to ${alarm.isActive ? 'ACTIVE' : 'INACTIVE'}.`, "EVENT");
+    }
+  }
+
+  function toggleAlarmContextMenu(id) {
+    const el = document.getElementById(`context-menu-${id}`);
+    const current = el.style.display;
+    document.querySelectorAll('.alarm-context-menu').forEach(m => m.style.display = 'none');
+    el.style.display = current === 'flex' ? 'none' : 'flex';
+  }
+
+  function deleteAlarm(id) {
+    const index = state.alarms.findIndex(a => a.id === id);
+    if (index !== -1) {
+      const title = state.alarms[index].title;
+      state.alarms.splice(index, 1);
+      saveState();
+      renderAlarms();
+      log("ROOM_DB", "Delete", `Deleted alarm "${title}" from primary storage table.`, "WARN");
+    }
+  }
+
+  // ── Group Operations ──────────────────────────────────────────────
+  function inviteFamilyMember() {
+    const name = document.getElementById('invite-name').value.trim();
+    const phone = document.getElementById('invite-phone').value.trim();
+    
+    if (!name || !phone) {
+      alert("Please fill in both fields.");
+      return;
+    }
+
+    const newMember = {
+      id: "member_" + (state.groupMembers.length + 1),
+      name,
+      phone,
+      status: "PENDING",
+      userId: "user_" + name.toLowerCase()
+    };
+    
+    state.groupMembers.push(newMember);
+    saveState();
+    
+    document.getElementById('invite-name').value = "";
+    document.getElementById('invite-phone').value = "";
+    
+    renderGroupMembers();
+    log("REMOTE_SYNC", "Invite", `Sent group invitation token to ${name} (${phone}) via FCM dispatch.`, "EVENT");
+  }
+
+  function sendRemoteAlarm() {
+    const recSelect = document.getElementById('remote-recipient-select');
+    const msg = document.getElementById('remote-alarm-message').value.trim();
+    const timeVal = document.getElementById('remote-alarm-time').value;
+    
+    if (!recSelect.value) {
+      alert("No valid recipient selected.");
+      return;
+    }
+    if (!msg) {
+      alert("Spoken message cannot be empty.");
+      return;
+    }
+
+    const member = state.groupMembers.find(m => m.id === recSelect.value);
+    const timeParts = timeVal.split(":");
+    const h = parseInt(timeParts[0]);
+    const m = parseInt(timeParts[1]);
+
+    const newAlarm = {
+      id: "alarm_" + (state.alarms.length + 1),
+      title: `Care: ${msg}`,
+      message: msg,
+      time: timeVal,
+      hour: h,
+      minute: m,
+      isActive: true,
+      recurrence: "DAILY",
+      recipientId: member.id,
+      recipientName: member.name
+    };
+
+    state.alarms.push(newAlarm);
+    saveState();
+    renderAlarms();
+    
+    document.getElementById('remote-alarm-message').value = "";
+    
+    log("REMOTE_SYNC", "Dispatch", `Dispatched remote voice alarm payload for ${member.name}. Encrypted payload successfully sent.`, "EVENT");
+    alert(`Remote alarm sent to ${member.name}!`);
+  }
+
+  // ── Voice Assistant overlay logic ────────────────────────────────
+  function openVoiceOverlay() {
+    document.getElementById('voice-overlay').classList.add('active');
+    log("VOICE", "Overlay", "Voice Overlay opened. Ready for mic capture.");
+    
+    // Auto-start visualizer animations
+    startWaveAnimation();
+  }
+
+  function closeVoiceOverlay() {
+    stopWaveAnimation();
+    document.getElementById('voice-overlay').classList.remove('active');
+    log("VOICE", "Overlay", "Voice Overlay closed.");
+  }
+
+  function toggleVoiceListening() {
+    const overlay = document.getElementById('voice-overlay');
+    const label = document.getElementById('voice-status-label');
+    const micBtn = document.getElementById('mic-action-btn');
+    
+    isListening = !isListening;
+    
+    if (isListening) {
+      overlay.classList.add('listening');
+      label.innerText = "Listening...";
+      document.getElementById('voice-transcript-display').innerText = "Speak your alarm...";
+      log("VOICE", "Mic", "Audio input channel RECORD_AUDIO initialized.");
+    } else {
+      overlay.classList.remove('listening');
+      label.innerText = "Tap and speak";
+      log("VOICE", "Mic", "Audio capture halted.");
+    }
+  }
+
+  function simulateVoiceCommand(phrase) {
+    openVoiceOverlay();
+    
+    const display = document.getElementById('voice-transcript-display');
+    const label = document.getElementById('voice-status-label');
+    const overlay = document.getElementById('voice-overlay');
+    
+    isListening = true;
+    overlay.classList.add('listening');
+    label.innerText = "Processing Speech...";
+    
+    log("SPEECH_TO_TEXT", "Capture", `Synthesizing transcript: "${phrase}"`);
+    
+    let words = phrase.split(" ");
+    let i = 0;
+    let currentText = "";
+    
+    // Animate speech processing
+    const interval = setInterval(() => {
+      if (i < words.length) {
+        currentText += words[i] + " ";
+        display.innerText = `"${currentText.trim()}"`;
+        i++;
+      } else {
+        clearInterval(interval);
+        isListening = false;
+        overlay.classList.remove('listening');
+        label.innerText = "NLP Analysis...";
+        
+        // Execute NLP Parsing simulation
+        runNlpSimulation(phrase);
+      }
+    }, 250);
+  }
+
+  // ── NLP & Speech Parsing Simulation ────────────────────────────────
+  function runNlpSimulation(phrase) {
+    log("NLP_ENGINE", "Parsing", `Analyzing syntax tree for token validation: "${phrase}"`);
+    
+    setTimeout(() => {
+      let title = "Voice Scheduled Reminder";
+      let time = "08:00";
+      let hour = 8;
+      let minute = 0;
+      let recurrence = "DAILY";
+
+      const lower = phrase.toLowerCase();
+      
+      // Match times
+      if (lower.includes("5 am") || lower.includes("5:00 am")) {
+        title = "Wake Up";
+        time = "05:00";
+        hour = 5;
+      } else if (lower.includes("7 pm") || lower.includes("7:00 pm")) {
+        title = "Evening Walk";
+        time = "19:00";
+        hour = 19;
+      } else if (lower.includes("water")) {
+        title = "Drink Water";
+        time = "12:00";
+        hour = 12;
+        recurrence = "HOURLY (2h)";
+      }
+
+      pendingParsedAlarm = {
+        title,
+        time,
+        hour,
+        minute,
+        recurrence,
+        message: phrase
+      };
+
+      // Speak validation feedback in selected language
+      if (state.userProfile.language === "hi-IN") {
+        speakText(`क्या मैं आपका ${title} का अलार्म, समय ${formatTimeTo12h(hour, minute)} पर सेट करूँ?`);
+      } else {
+        speakText(`Should I set your alarm for ${title} at ${formatTimeTo12h(hour, minute)}?`);
+      }
+
+      // Show confirmation dialog inside phone
+      document.getElementById('confirm-alarm-title').innerText = title;
+      document.getElementById('confirm-alarm-time-str').innerText = `Today, ${formatTimeTo12h(hour, minute)}`;
+      document.getElementById('confirm-alarm-recurrence').innerText = recurrence;
+      
+      document.getElementById('confirm-alarm-modal').style.display = 'flex';
+      log("NLP_ENGINE", "Result", `Parsed: ${title} | Time: ${time} | Recurrence: ${recurrence}`, "INFO");
+    }, 1000);
+  }
+
+  function saveParsedAlarm() {
+    if (pendingParsedAlarm) {
+      const newAlarm = {
+        id: "alarm_" + (state.alarms.length + 1),
+        title: pendingParsedAlarm.title,
+        message: pendingParsedAlarm.message,
+        time: pendingParsedAlarm.time,
+        hour: pendingParsedAlarm.hour,
+        minute: pendingParsedAlarm.minute,
+        isActive: true,
+        recurrence: pendingParsedAlarm.recurrence,
+        recipientId: null,
+        recipientName: "Self"
+      };
+
+      state.alarms.push(newAlarm);
+      saveState();
+      renderAlarms();
+      
+      log("ROOM_DB", "Insert", `New alarm "${newAlarm.title}" successfully committed to database storage.`, "EVENT");
+      
+      speakText(state.userProfile.language === "hi-IN" ? "अलार्म सहेज लिया गया है।" : "Alarm created successfully.");
+      
+      pendingParsedAlarm = null;
+      document.getElementById('confirm-alarm-modal').style.display = 'none';
+      closeVoiceOverlay();
+    }
+  }
+
+  function cancelParsedAlarm() {
+    pendingParsedAlarm = null;
+    document.getElementById('confirm-alarm-modal').style.display = 'none';
+    log("VOICE", "Cancel", "Parsed alarm creation discarded by user.");
+  }
+
+  // ── Text-to-Speech Synth Engine ───────────────────────────────────
+  function speakText(text) {
+    if ('speechSynthesis' in window) {
+      // Cancel any ongoing speeches
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = state.userProfile.language;
+      utterance.rate = state.userProfile.speechRate;
+      
+      log("TTS_ENGINE", "Synthesizer", `Playing speech announcement: "${text}" with rate ${state.userProfile.speechRate}x`);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      log("TTS_ENGINE", "Error", "Speech Synthesis API not supported on this browser.", "WARN");
+    }
+  }
+
+  function changeLanguage() {
+    state.userProfile.language = document.getElementById('settings-language-select').value;
+    saveState();
+    log("SYSTEM", "Config", `System language updated to ${state.userProfile.language}.`, "INFO");
+    
+    speakText(state.userProfile.language === "hi-IN" ? "भाषा बदल दी गई है।" : "Language has been updated.");
+  }
+
+  function changeSpeechRate() {
+    const rate = parseFloat(document.getElementById('settings-speech-rate').value);
+    state.userProfile.speechRate = rate;
+    document.getElementById('speech-rate-val').innerText = rate + "x" + (rate === 1.0 ? " (Normal)" : "");
+    saveState();
+    log("SYSTEM", "Config", `Speech speed rate updated to ${rate}x.`, "INFO");
+    
+    speakText(state.userProfile.language === "hi-IN" ? "गति जांची गई।" : "Testing speech rate speed.");
+  }
+
+  // ── Soundwave Canvas Visualizer ──────────────────────────────────
+  function startWaveAnimation() {
+    const canvas = document.getElementById('soundwave-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    // Scale canvas resolution
+    canvas.width = canvas.parentElement.clientWidth;
+    canvas.height = canvas.parentElement.clientHeight;
+
+    let offset = 0;
+    
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      const midY = canvas.height / 2;
+      const amplitude = isListening ? 26 : 4;
+      const freq = 0.012;
+      
+      ctx.beginPath();
+      ctx.strokeStyle = "#6366F1";
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = "round";
+      
+      ctx.moveTo(0, midY);
+      for (let x = 0; x < canvas.width; x += 3) {
+        const y = midY + Math.sin(x * freq + offset) * amplitude;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Secondary subtle wave
+      ctx.beginPath();
+      ctx.strokeStyle = "rgba(139, 92, 246, 0.4)";
+      ctx.lineWidth = 2;
+      ctx.moveTo(0, midY);
+      for (let x = 0; x < canvas.width; x += 3) {
+        const y = midY + Math.sin(x * freq * 0.8 - offset) * (amplitude * 0.7);
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      
+      offset += 0.08;
+      canvasAnimationId = requestAnimationFrame(draw);
+    }
+    
+    draw();
+  }
+
+  function stopWaveAnimation() {
+    if (canvasAnimationId) {
+      cancelAnimationFrame(canvasAnimationId);
+      canvasAnimationId = null;
+    }
+  }
+
+  // ── SQLCipher Encrypted DB Integrity check ─────────────────────────
+  function checkSqlcipherKey() {
+    log("SQLCIPHER", "Integrity", "Running PRAGMA cipher_integrity_check...");
+    setTimeout(() => {
+      log("SQLCIPHER", "Integrity", "Result: OK. Database pages matching schema signature.", "INFO");
+      alert("SQLCipher key check successful! Database integrity is verified.");
+    }, 600);
+  }
+
+  function exportBackup() {
+    log("BACKUP_MGR", "Export", "Packing SQLCipher Database into memory block...");
+    setTimeout(() => {
+      log("BACKUP_MGR", "Export", "Successfully generated encrypted backup payload: backup.bin (28.4 KB)", "INFO");
+      alert("Encrypted backup exported to local storage directories!");
+    }, 700);
+  }
+
+  // ── Diagnostics & Telemetry Viewer ────────────────────────────────
+  function viewTelemetryQueue() {
+    log("TELEMETRY", "Queue", `Listing local log packets buffered (Total: ${state.telemetryQueue.length})`);
+    
+    // Open logs inside the device simulation
+    let html = "";
+    if (state.telemetryQueue.length === 0) {
+      html = "No logs buffered yet.";
+    } else {
+      // Build visual display of queue
+      state.telemetryQueue.forEach(log => {
+        html += `
+          <div style="font-size:10px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px;">
+            <span style="color:var(--primary-light); font-weight:700;">[${log.tag}]</span>
+            <span style="color:#FFF;">${log.event}</span>: ${log.message}
+          </div>
+        `;
+      });
+    }
+
+    // Modal display logic using confirm overlay style but customize it
+    const modal = document.getElementById('confirm-alarm-modal');
+    modal.style.display = 'flex';
+    document.getElementById('confirm-alarm-title').innerText = "Local Telemetry Stream";
+    
+    const details = document.getElementById('confirm-alarm-modal').querySelector('.confirm-details-box');
+    details.innerHTML = `
+      <div style="max-height: 250px; overflow-y: auto;">
+        ${html}
+      </div>
+    `;
+
+    // Swap buttons to standard dismiss
+    const buttons = document.getElementById('confirm-alarm-modal').querySelector('.confirm-buttons-row');
+    buttons.innerHTML = `
+      <button class="standard-btn standard-btn-primary" onclick="closeTelemetryModal()">Close Telemetry Viewer</button>
+    `;
+  }
+
+  function closeTelemetryModal() {
+    document.getElementById('confirm-alarm-modal').style.display = 'none';
+    
+    // Restore buttons to original confirmation row
+    const buttons = document.getElementById('confirm-alarm-modal').querySelector('.confirm-buttons-row');
+    buttons.innerHTML = `
+      <button class="modal-cancel-btn" onclick="cancelParsedAlarm()">Cancel</button>
+      <button class="modal-confirm-btn" onclick="saveParsedAlarm()">Save Alarm</button>
+    `;
+    
+    // Restore details box structure
+    const details = document.getElementById('confirm-alarm-modal').querySelector('.confirm-details-box');
+    details.innerHTML = `
+      <div class="confirm-detail-row">
+        <span class="confirm-label">Title / Event</span>
+        <span class="confirm-value" id="confirm-alarm-title">-</span>
+      </div>
+      <div class="confirm-detail-row">
+        <span class="confirm-label">Trigger Time</span>
+        <span class="confirm-value" id="confirm-alarm-time-str">-</span>
+      </div>
+      <div class="confirm-detail-row">
+        <span class="confirm-label">Recurrence Type</span>
+        <span class="confirm-value" id="confirm-alarm-recurrence">-</span>
+      </div>
+    `;
+  }
+
+  function runHealthDiagnostics() {
+    log("DIAGNOSTICS", "Run", "Initializing remote microservices test checks...");
+    
+    setTimeout(() => {
+      log("DIAGNOSTICS", "Network", "GET /api/health check: 200 OK (84ms)", "INFO");
+      log("DIAGNOSTICS", "Room", "Local database read test: SUCCESS", "INFO");
+      log("DIAGNOSTICS", "Worker", "AlarmManager exact trigger daemon: ACTIVE", "INFO");
+      log("DIAGNOSTICS", "FCM", "Google Firebase dispatch bridge: CONNECTED", "INFO");
+      log("DIAGNOSTICS", "Keystore", "Android Cryptographic key container verification: SECURE", "INFO");
+      alert("Diagnostics complete! All microservices and local databases are fully functioning.");
+    }, 800);
+  }
+
+  function testFcmPush() {
+    log("REMOTE_SYNC", "FCM", "Dispatching simulated Firebase Push Notification to device...", "WARN");
+    
+    setTimeout(() => {
+      const pushAlarm = {
+        id: "alarm_fcm_" + Date.now(),
+        title: "Papa's Blood Test",
+        message: "Tell Papa to visit the lab for blood collection.",
+        time: "09:00",
+        hour: 9,
+        minute: 0,
+        isActive: true,
+        recurrence: "DAILY",
+        recipientId: "member_1",
+        recipientName: "Papa"
+      };
+
+      state.alarms.push(pushAlarm);
+      saveState();
+      renderAlarms();
+
+      log("FCM_DISPATCH", "Receive", `Received payload from caregiver channel. Action: REGISTER_ALARM. Title: "${pushAlarm.title}"`, "EVENT");
+      speakText("New caregiver alarm received. Papa's Blood Test scheduled for 9 AM.");
+      alert("New FCM voice alarm payload received from caregiver!");
+    }, 1200);
+  }
+
+  // ── Premium Upgrade Simulation ────────────────────────────────────
+  function simulatePremiumUpgrade() {
+    state.userProfile.premiumUser = true;
+    saveState();
+    applyPremiumUI();
+    
+    log("SYSTEM", "Billing", "Payment verification success. Account upgraded to EchoCare Premium.", "EVENT");
+    speakText("Thank you for choosing EchoCare Premium.");
+    alert("Payment successful! EchoCare Premium features are now unlocked.");
+  }
+
+  function applyPremiumUI() {
+    document.getElementById('settings-premium-status').innerText = "Premium Account";
+    document.getElementById('settings-premium-status').style.background = "linear-gradient(135deg, #10B981, #14B8A6)";
+    document.getElementById('settings-premium-title').innerText = "You are Premium! 👑";
+    document.getElementById('settings-premium-desc').innerText = "Offline backup capabilities, cryptographic storage keys, and customized voice clone features are unlocked.";
+  }
+
+  // ── Crash Simulator ───────────────────────────────────────────────
+  function simulateFatalCrash() {
+    // Show standard fatal crash screen in phone
+    const trace = `FATAL EXCEPTION: main
+Process: com.echocare.app, PID: 18244
+java.lang.NullPointerException: Attempt to invoke virtual method 'void com.echocare.app.alarm.AlarmScheduler.cancel(android.app.PendingIntent)' on a null object reference
+    at com.echocare.app.ui.screens.home.HomeViewModel.toggleActive(HomeViewModel.kt:148)
+    at com.echocare.app.ui.screens.home.HomeScreenKt.UpcomingAlarmCard(HomeScreen.kt:298)
+    at com.echocare.app.ui.screens.home.HomeScreenKt.access$UpcomingAlarmCard(HomeScreen.kt:1)
+    at com.echocare.app.ui.screens.home.HomeScreenKt$HomeScreen$1$4$1$1.invoke(HomeScreen.kt:230)
+    at androidx.compose.runtime.Recomposer.runRecomposeAndApplyChanges(Recomposer.kt:128)
+    at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:182)`;
+
+    document.body.innerHTML = `
+      <div style="background:#000; color:#ff5f5f; font-family:monospace; padding:32px; min-height:100vh; width:100vw; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:left;">
+        <span style="font-size:48px;">⚠️</span>
+        <h2 style="font-size:18px; margin-top:12px; font-weight:bold;">Android Fatal Process Crash</h2>
+        <p style="font-size:12px; color:#aaa; margin-top:6px; margin-bottom:18px;">EchoCare has crashed due to a simulated NullPointerException.</p>
+        <pre style="width:100%; max-width:800px; background:#111; border:1px solid #333; padding:12px; border-radius:12px; overflow-x:auto; font-size:11px; color:#00ff66; line-height:1.4;">${trace}</pre>
+        <button onclick="location.reload()" style="margin-top:24px; padding:12px 24px; background:#ff5f5f; color:#000; font-weight:bold; border:none; border-radius:10px; cursor:pointer; font-family:inherit;">Restart Application</button>
+      </div>
+    `;
+    console.error("FATAL CRASH SIMULATION RUN");
+  }
+
+  function triggerNotificationSim() {
+    log("SYSTEM", "Notify", "Notification panel requested. Checking notifications queue...");
+    alert("No new notifications.");
+  }
+</script>
+
+</body>
+</html>
